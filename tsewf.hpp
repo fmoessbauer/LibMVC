@@ -117,8 +117,8 @@ public:
       int cutoff_time,
       bool verbose = false)
   : verbose(verbose),
-    optimal_size(optimal_size),
-    cutoff_time(cutoff_time)
+    cutoff_time(cutoff_time),
+    optimal_size(optimal_size)
   {
     build_instance(str);
     init_sol();
@@ -274,9 +274,8 @@ private:
   {
     c_size--;
 
-    int v;
-    int max_improvement;
-    int max_vertex;//vertex with the highest improvement in C
+    int max_improvement = 0;
+    int max_vertex      = 0;//vertex with the highest improvement in C
 
     max_improvement=-200000000;
     for (int v=1; v<=v_num; ++v)
@@ -557,9 +556,14 @@ public:
       if(step % try_step==0)
       {
         finish = chrono::system_clock::now();
-        auto elapsed_ms  = chrono::duration_cast<chrono::milliseconds>(finish - start_time);
+        auto elapsed_ms  = chrono::duration_cast<chrono::milliseconds>(finish - start);
         double elap_time = static_cast<double>(elapsed_ms.count()) / 1000;
-        if(elap_time >= cutoff_time) return;
+        if(elap_time >= static_cast<double>(cutoff_time)){
+          if(verbose){
+            std::cout << "Time limit reached:" << elap_time << "s" << std::endl;
+          }
+          return;
+        }
       }
 
       /* choose a vertex u in C with the highest dscore,
