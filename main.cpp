@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
   cout<<"c Start local search..."<<endl;
 
-  solver.cover_LS([&solver](){return FastVC::default_stats_printer(solver);});
+  solver.cover_LS(FastVC::default_stats_printer);
   auto solution = solver.get_cover();
 
     //check solution

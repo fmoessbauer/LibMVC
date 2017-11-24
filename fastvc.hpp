@@ -245,10 +245,10 @@ private:
     {
         int cand_count=50;
         int i,v;
-        int best_v = remove_cand[rand()%remove_cand_size];
+        int best_v = remove_cand[rdrand32()%remove_cand_size];
 
         for (i=1; i<cand_count; ++i) {
-            v = remove_cand[rand()%remove_cand_size];
+            v = remove_cand[rdrand32()%remove_cand_size];
 
             if( dscore[v] < dscore[best_v])
                 continue;
@@ -376,6 +376,15 @@ private:
         }
     }
 
+    inline unsigned int rdrand32 ()
+    {
+        register unsigned int rand;
+        asm volatile ("rdrand %0"
+                      : "=r" (rand)
+                     );
+        return rand;
+    }
+
 public:
 
     /**
@@ -427,8 +436,8 @@ public:
      */
     void cover_LS()
     {
-        cover_LS([]() {
-            return true;
+        cover_LS([](const FastVC& v){
+          return true;
         });
     }
 
@@ -436,7 +445,7 @@ public:
      * calculate minimum vertex cover and call callback after
      * each iteration. If callback returns true, stop calculation.
      */
-    void cover_LS(const std::function<bool (void)> & callback_on_update)
+    void cover_LS(const std::function<bool (const FastVC&)> & callback_on_update)
     {
         int    remove_v, add_v;
         int    e,v1,v2;
@@ -447,7 +456,7 @@ public:
         while(1) {
             if (uncov_stack.size() == 0) { //update best solution if needed
                 update_best_sol();
-                if(callback_on_update()) {
+                if(callback_on_update(*this)) {
                     return;
                 }
                 if (c_size==optimal_size) return;
@@ -468,7 +477,7 @@ public:
 
             remove(remove_v);
 
-            e = uncov_stack[rand()%uncov_stack.size()];
+            e = uncov_stack[rdrand32()%uncov_stack.size()];
             v1 = edge[e].v1;
             v2 = edge[e].v2;
 
@@ -573,18 +582,18 @@ public:
                    (std::chrono::system_clock::now() - start));
     }
 
-/**
- * Print statistics during calculation
- */
-static bool default_stats_printer(const FastVC & solver){
-    auto time_ms = std::chrono::duration_cast<
-                     std::chrono::milliseconds>(solver.get_best_duration());
-    std::cout << "Better MVC found.\tSize: "
-              << solver.get_best_cover_size()
-              << "\tTime: " << std::fixed << std::setw(4) << std::setprecision(4)
-              << time_ms.count() << "ms" << std::endl;
-    return false;
-}
+    /**
+     * Print statistics during calculation
+     */
+    static bool default_stats_printer(const FastVC & solver){
+        auto time_ms = std::chrono::duration_cast<
+                         std::chrono::milliseconds>(solver.get_best_duration());
+        std::cout << "Better MVC found.\tSize: "
+                  << solver.get_best_cover_size()
+                  << "\tTime: " << std::fixed << std::setw(4) << std::setprecision(4)
+                  << time_ms.count() << "ms" << std::endl;
+        return false;
+    }
 
 };
 
