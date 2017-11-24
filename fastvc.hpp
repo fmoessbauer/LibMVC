@@ -17,6 +17,7 @@
 *************************************************/
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include <vector>
 #include <numeric>
@@ -572,6 +573,19 @@ public:
                std::chrono::milliseconds>(
                    (std::chrono::system_clock::now() - start));
     }
+
+/**
+ * Print statistics during calculation
+ */
+static bool default_stats_printer(const FastVC & solver){
+    auto time_ms = std::chrono::duration_cast<
+                     std::chrono::milliseconds>(solver.get_best_duration());
+    std::cout << "Better MVC found.\tSize: "
+              << solver.get_best_cover_size()
+              << "\tTime: " << std::fixed << std::setw(4) << std::setprecision(4)
+              << time_ms.count() << "ms" << std::endl;
+    return false;
+}
 
 };
 

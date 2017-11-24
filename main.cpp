@@ -33,15 +33,7 @@ int main(int argc, char* argv[])
 
   cout<<"c Start local search..."<<endl;
 
-  solver.cover_LS([&solver](){
-    // print stats
-    auto time_ms = chrono::duration_cast<chrono::milliseconds>(solver.get_best_duration());
-    std::cout << "Better MVC found.\tSize: "
-              << solver.get_best_cover_size()
-              << "\tTime: " << std::fixed << std::setw(4) << std::setprecision(4)
-              << time_ms.count() << "ms" << std::endl;
-    return false;
-  });
+  solver.cover_LS([&solver](){return FastVC::default_stats_printer(solver);});
   auto solution = solver.get_cover();
 
     //check solution
