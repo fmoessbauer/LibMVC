@@ -350,7 +350,6 @@ private:
                 dscore[n]++;
             }
         }
-
     }
 
     void remove(int v)
