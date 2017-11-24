@@ -24,12 +24,13 @@ int main(int argc, char* argv[])
   std::vector<int> solution;
 
   cout<<"c Start local search..."<<endl;
-  solution = solver.cover_LS();
+  solver.cover_LS();
+  solution = std::move(solver.get_independent_set());
 		
 		//check solution
 		if(solver.check_solution())
 		{
-			cout<<"c Best found vertex cover size = "<<solution.size()<<endl;
+			cout<<"c Best found independent set size = "<<solution.size()<<endl;
 			solver.print_solution();
 			cout<<"c searchSteps = "<<solver.best_step<<endl;
 			cout<<"c solveTime = "<<solver.best_comp_time<<endl;
