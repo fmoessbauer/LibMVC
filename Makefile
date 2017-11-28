@@ -1,4 +1,9 @@
-tsewf: tsewf.hpp main.cpp
-	g++ main.cpp -O3 -Ofast -Wall -o tsewf
+FILES=numvc.hpp indexed_heap.hpp main.cpp
 
-all: tsewf
+numvc: $(FILES)
+	g++ main.cpp -O3 -Ofast -Wall -o numvc
+
+debug: $(FILES)
+	g++ main.cpp -g -Wall -o numvc
+
+all: numvc

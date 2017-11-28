@@ -8,7 +8,7 @@ are provided.
 
 ## Compiling
 
-This version is header only and works with C++11. Just incluce `tsewf.hpp`.
+This version is header only and works with C++11. Just incluce `numvc.hpp`.
 
 ## How to use
 
@@ -34,7 +34,7 @@ std::stringstream os;
 write_dimacs(col_graph, os);
 
 // initialize solver and solve
-TSEWF solver(os, boost::num_vertices(col_graph)-size_is, max_sec, verbose);
+NuMVC solver(os, boost::num_vertices(col_graph)-size_is, max_sec, verbose);
 solver.cover_LS();
 std::vector<int> solution = std::move(solver.get_independent_set());
 ```

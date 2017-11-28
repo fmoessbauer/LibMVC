@@ -1,4 +1,4 @@
-#include "tsewf.hpp"
+#include "numvc.hpp"
 #include <fstream>
 #include <chrono>
 
@@ -18,14 +18,14 @@ int main(int argc, char* argv[])
 
     std::string filename(argv[1]);
     std::ifstream file(filename, std::ios::in);
-    TSEWF solver(file, optimal_size, std::chrono::seconds(cutoff_time));
+    NuMVC solver(file, optimal_size, std::chrono::seconds(cutoff_time), true);
 
     cout<<"c Improved NuMVC Local Search Solver"<<endl;
 
     std::vector<int> solution;
 
     cout<<"c Start local search..."<<endl;
-    solver.cover_LS(TSEWF::default_stats_printer);
+    solver.cover_LS(NuMVC::default_stats_printer);
     solution = std::move(solver.get_independent_set());
 
     //check solution

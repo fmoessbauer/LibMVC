@@ -4,33 +4,38 @@
 
 
 /************************************************
-** Date:	2011.7.1
-** TSEWF (Two Stage Exchange and Weighting with Forgetting)
+** Date:  2011.7.1
+** NuMVC (Two Stage Exchange and Weighting with Forgetting)
 ** Author: Shaowei Cai, shaowei_cai@126.com
 **       School of EECS, Peking University
 **       Beijing, China
 **
-** Date:	2011.10.28
+** Date:  2011.10.28
 ** Modify: Shaowei Cai
 ** use dynamic memory for v_adj[][] and v_edge[][], tidy codes.
 **
 ** Date: 2017.11.17
 ** Modify: Felix Moessbauer
 ** Object oriented design, C++11 support
+** Use heap for construction of initial solution
 ************************************************/
 
-#ifndef TSEWF_INCLUDED
-#define TSEWF_INCLUDED
+#ifndef NuMVC_INCLUDED
+#define NuMVC_INCLUDED
 
 #include <chrono>
 #include <vector>
+#include <utility>
 #include <iostream>
 #include <iomanip>
 #include <numeric>
 #include <functional>
+#include <algorithm>
 #include <random>
 
-class TSEWF {
+#include "indexed_heap.hpp"
+
+class NuMVC {
 private:
     using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
     using duration_ms = std::chrono::milliseconds;
@@ -65,12 +70,13 @@ private:
     /*structures about vertex*/
     std::vector<int>       dscore;     //dscore of v
     std::vector<long long> time_stamp;
+    int                    best_cov_v;
 
     //from vertex to it's edges and neighbors
-    std::vector<int> v_beg_idx;    // v_edges and v_adj is flattened 2-d array, hence store indices
-    std::vector<int> v_edges;      //edges related to v, v_edges[i][k] means vertex v_i's k_th edge
-    std::vector<int> v_adj;        //v_adj[v_i][k] = v_j(actually, that is v_i's k_th neighbor)
-    std::vector<int> v_degree; //amount of edges (neighbors) related to v
+    std::vector<int> v_beg_idx; // v_edges and v_adj is flattened 2-d array, hence store indices
+    std::vector<int> v_edges;   //edges related to v, v_edges[i][k] means vertex v_i's k_th edge
+    std::vector<int> v_adj;     //v_adj[v_i][k] = v_j(actually, that is v_i's k_th neighbor)
+    std::vector<int> v_degree;  //amount of edges (neighbors) related to v
 
 
     /* structures about solution */
@@ -79,7 +85,7 @@ private:
     std::vector<int> v_in_c;      //a flag indicates whether a vertex is in C
     std::vector<int> remove_cand; //remove candidates, an array consists of only vertices in C, not including tabu_remove
     std::vector<int> index_in_remove_cand;
-    int    remove_cand_size;
+    int              remove_cand_size;
 
     //best solution found
     int              best_c_size;
@@ -101,7 +107,24 @@ private:
 
     //CC and taboo
     std::vector<int> conf_change;
-    int   tabu_remove=0;
+    int              tabu_remove=0;
+
+    // priority queue for initial construction (max element at first index)
+    // build heap by comparing dscores
+    long num_comp = 0;
+    std::function<bool (const int &, const int &)>
+          dscore_cmp = [&](const int & a, const int & b)
+    {
+      ++num_comp;
+      return dscore[a] < dscore[b];
+    };
+
+    using heap_t = Indexed_Heap<
+                      int,
+                      std::vector<int>,
+                      std::map<int, size_t>,
+                      decltype(dscore_cmp)>;
+    heap_t v_heap;
 
     //smooth
     int    ave_weight=1;
@@ -118,7 +141,7 @@ public:
     template<
         typename Is,
         typename Duration>
-    TSEWF(
+    NuMVC(
         /// Input Stream with graph in DIMACS format
         Is & str,
         /// Size of optimal vertex cover (set to 0 if not known)
@@ -127,10 +150,13 @@ public:
         Duration cutoff_time,
         /// Print messages during calculation
         bool verbose = false,
-        unsigned int rnd_seed = std::time(0))
+        /// seed for random number generator
+        unsigned int rnd_seed =
+            std::chrono::high_resolution_clock::now().time_since_epoch().count())
         : verbose(verbose),
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-          optimal_size(optimal_size)
+          optimal_size(optimal_size),
+          v_heap(dscore_cmp)
     {
         mt_rand.seed(rnd_seed);
         build_instance(str);
@@ -182,7 +208,22 @@ private:
         best_step = step;
     }
 
-private:
+    void update_best_cov_v()
+    {
+        int i,v;
+        best_cov_v = remove_cand[0];
+        for (i=1; i<remove_cand_size; ++i) {
+            v = remove_cand[i];
+            if(v==tabu_remove) continue;
+            if( dscore[v] < dscore[best_cov_v])
+                continue;
+            else if( dscore[v]> dscore[best_cov_v] )
+                best_cov_v = v;
+            else if (time_stamp[v]<time_stamp[best_cov_v])
+                best_cov_v = v;
+        }
+    }
+
     template<typename Is>
     int build_instance(Is & str)
     {
@@ -244,7 +285,7 @@ private:
     {
         int v,j;
         j=0;
-        for (v=1; v<=v_num; v++) {
+        for (v=1; v<=v_num; ++v) {
             if(v_in_c[v]==1) { // && v!=tabu_remove)
                 remove_cand[j] = v;
                 index_in_remove_cand[v]=j;
@@ -258,7 +299,7 @@ private:
     // kick out the worst vertex in currennt cover
     void update_target_size()
     {
-        c_size--;
+        --c_size;
 
         int max_improvement = 0;
         int max_vertex      = 0;//vertex with the highest improvement in C
@@ -282,7 +323,6 @@ private:
         uncov_stack[uncov_stack_fill_pointer++] = e;
     }
 
-
     inline void cover(int e)
     {
         int index,last_uncov_edge;
@@ -294,14 +334,14 @@ private:
         index_in_uncov_stack[last_uncov_edge] = index;
     }
 
-
     void init_sol()
     {
         int i,v,e;
+        start = std::chrono::system_clock::now();
 
         /*** build solution data structures of the instance ***/
         //init vertex cover
-        for (v=1; v<=v_num; v++) {
+        for (v=1; v<=v_num; ++v) {
             v_in_c[v] = 0;
             dscore[v] = 0;
 
@@ -309,7 +349,7 @@ private:
             time_stamp[v]= 0; // to break ties
         }
 
-        for (e=0; e<e_num; e++) {
+        for (e=0; e<e_num; ++e) {
             edge_weight[e] = 1;
             dscore[edge[e].v1]+=edge_weight[e];
             dscore[edge[e].v2]+=edge_weight[e];
@@ -317,43 +357,36 @@ private:
 
         //init uncovered edge stack and cover_vertrex_count_of_edge array
         uncov_stack_fill_pointer = 0;
-        for (e=0; e<e_num; e++)
+
+        std::vector<int> best_array(v_num + 1);
+        for (e=0; e<e_num; ++e)
             uncover(e);
 
-
-
-        for (i=0; uncov_stack_fill_pointer>0; ) {
-            best_vertex_improvement = 0;
-            best_count = 0;
-            for (v=1; v<=v_num; ++v) {
-                if(v_in_c[v]==1)continue;
-
-                if (dscore[v]>best_vertex_improvement) {
-                    best_vertex_improvement = dscore[v];
-                    best_array[0] = v;
-                    best_count = 1;
-                } else if (dscore[v]==best_vertex_improvement) {
-                    best_array[best_count] = v;
-                    best_count++;
-                }
-            }
-
-            if(best_count>0) {
-                add(best_array[mt_rand()%best_count]);
-                ++i;
-            }
+        for(v=1; v<=v_num; ++v) {
+            v_heap.push(v);
         }
 
-        if(verbose) {
-            std::cout << "Initial cover size: " << i << std::endl;
+        for(i=0; uncov_stack_fill_pointer>0; ++i) {
+            int best_v = v_heap.top();
+            v_heap.pop();
+            if(dscore[best_v]>0) {
+                add_init(best_v);
+            }
         }
 
         c_size = i;
-
         update_best_sol();
 
-        reset_remove_cand();
+        finish = std::chrono::system_clock::now();
+        auto init_sol_time = std::chrono::duration_cast<duration_ms>(finish-start);
+        if(verbose) {
+            std::cout << "Initial solution size: " << c_size << std::endl;
+            std::cout << "Initial solution time: " << init_sol_time.count()
+                      << "ms" << std::endl;
+        }
 
+        reset_remove_cand();
+        update_best_cov_v();
     }
 
     // add a vertex to current cover
@@ -367,8 +400,8 @@ private:
         int edge_count = v_degree[v];
 
         for (i=0; i<edge_count; ++i) {
-            e = v_edges[v_beg_idx[v]+i];// v's i'th edge
-            n = v_adj[v_beg_idx[v]+i];//v's i'th neighbor
+            e = v_edges[v_beg_idx[v]+i]; // v's i'th edge
+            n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
 
             if (v_in_c[n]==0) { //this adj isn't in cover set
                 dscore[n] -= edge_weight[e];
@@ -379,7 +412,33 @@ private:
                 dscore[n] += edge_weight[e];
             }
         }
+    }
 
+    void add_init(int v)
+    {
+        v_in_c[v] = 1;
+        dscore[v] *= (-1);
+
+        int i,e,n;
+
+        const int & degree = v_degree[v];
+
+        for (i=0; i<degree ; ++i) {
+            e = v_edges[v_beg_idx[v]+i]; // v's i'th edge
+            n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
+
+            if (v_in_c[n]==0) { //this adj isn't in cover set
+                if(v_heap.count(n) > 0){
+                  v_heap.erase(v_heap[n]);
+                }
+                dscore[n] -= edge_weight[e];
+                conf_change[n] = 1;
+                cover(e);
+                v_heap.push(n);
+            } else {
+                dscore[n] += edge_weight[e];
+            }
+        }
     }
 
     void remove(int v)
@@ -404,7 +463,6 @@ private:
                 dscore[n] -= edge_weight[e];
             }
         }
-
     }
 
     void forget_edge_weights()
@@ -466,8 +524,8 @@ public:
      */
     void cover_LS()
     {
-        cover_LS([](const TSEWF& v){
-          return true;
+        cover_LS([](const NuMVC& v) {
+            return true;
         });
     }
 
@@ -475,8 +533,8 @@ public:
      * calculate minimum vertex cover and call callback after
      * each iteration. If callback returns true, stop calculation.
      */
-    void cover_LS(const std::function<bool (const TSEWF&)> & callback_on_update)
-   {
+    void cover_LS(const std::function<bool (const NuMVC&)> & callback_on_update)
+    {
         int    best_cov_v;    //the vertex of the highest dscore in C
         int    best_add_v;
         int    e,v1,v2;
@@ -701,7 +759,7 @@ public:
     /**
      * Print statistics during calculation
      */
-    static bool default_stats_printer(const TSEWF& solver)
+    static bool default_stats_printer(const NuMVC& solver)
     {
         auto time_ms = std::chrono::duration_cast<
                        std::chrono::milliseconds>(solver.get_best_duration());
