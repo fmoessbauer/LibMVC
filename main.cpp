@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 
     //check solution
     if(solver.check_solution()) {
-        cout<<"c Best found vertex cover size = "<<solution.size()<<endl;
+        cout<<"c Best found vertex cover size = "<<solver.get_best_cover_size()<<endl;
         solver.print_solution();
         auto solver_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_best_duration());
         auto total_time_ms  = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_total_duration());

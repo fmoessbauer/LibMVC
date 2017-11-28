@@ -91,10 +91,6 @@ private:
     int              best_c_size;
     std::vector<int> best_v_in_c; //a flag indicates whether a vertex is in best solution
 
-    int best_vertex_improvement;
-    int best_count;
-    std::vector<int> best_array;
-
     duration_ms best_comp_time;
     long        best_step;
 
@@ -190,7 +186,6 @@ private:
 
         //CC and taboo
         conf_change.resize(num_vertices);
-        best_array.resize(num_vertices);
     }
 
     // copy v_in_c to best_v_in_c
@@ -336,12 +331,11 @@ private:
 
     void init_sol()
     {
-        int i,v,e;
         start = std::chrono::system_clock::now();
 
         /*** build solution data structures of the instance ***/
         //init vertex cover
-        for (v=1; v<=v_num; ++v) {
+        for (int v=1; v<=v_num; ++v) {
             v_in_c[v] = 0;
             dscore[v] = 0;
 
@@ -349,7 +343,7 @@ private:
             time_stamp[v]= 0; // to break ties
         }
 
-        for (e=0; e<e_num; ++e) {
+        for (int e=0; e<e_num; ++e) {
             edge_weight[e] = 1;
             dscore[edge[e].v1]+=edge_weight[e];
             dscore[edge[e].v2]+=edge_weight[e];
@@ -358,19 +352,20 @@ private:
         //init uncovered edge stack and cover_vertrex_count_of_edge array
         uncov_stack_fill_pointer = 0;
 
-        std::vector<int> best_array(v_num + 1);
-        for (e=0; e<e_num; ++e)
+        for (int e=0; e<e_num; ++e)
             uncover(e);
 
-        for(v=1; v<=v_num; ++v) {
+        for(int v=1; v<=v_num; ++v) {
             v_heap.push(v);
         }
 
-        for(i=0; uncov_stack_fill_pointer>0; ++i) {
+        int i = 0;
+        while(uncov_stack_fill_pointer>0) {
             int best_v = v_heap.top();
             v_heap.pop();
             if(dscore[best_v]>0) {
                 add_init(best_v);
+                ++i;
             }
         }
 
@@ -567,7 +562,7 @@ public:
                 auto elapsed_ms  = std::chrono::duration_cast<duration_ms>(finish - start);
                 if(elapsed_ms >= cutoff_time) {
                     if(verbose) {
-                        std::cout << "Time limit reached:" << elapsed_ms.count() << "s" << std::endl;
+                        std::cout << "Time limit reached:" << elapsed_ms.count() << "ms" << std::endl;
                     }
                     return;
                 }
