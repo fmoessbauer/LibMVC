@@ -107,13 +107,9 @@ private:
 
     // priority queue for initial construction (max element at first index)
     // build heap by comparing dscores
-    long num_comp = 0;
     std::function<bool (const int &, const int &)>
           dscore_cmp = [&](const int & a, const int & b)
-    {
-      ++num_comp;
-      return dscore[a] < dscore[b];
-    };
+    { return (dscore[a] < dscore[b]); };
 
     using heap_t = Indexed_Heap<
                       int,
