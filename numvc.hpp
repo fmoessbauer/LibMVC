@@ -33,6 +33,10 @@
 #include <algorithm>
 #include <random>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "indexed_heap.hpp"
 
 class NuMVC {
@@ -281,7 +285,7 @@ private:
             if(v_in_c[v]==1) { // && v!=tabu_remove)
                 remove_cand[j] = v;
                 index_in_remove_cand[v]=j;
-                j++;
+                ++j;
             } else index_in_remove_cand[v]=0;
         }
 
@@ -333,6 +337,7 @@ private:
         /*** build solution data structures of the instance ***/
         //init vertex cover
         //conf_change = 1 (already set in resize call)
+        #pragma omp parallel for schedule(static,1024)
         for (int e=0; e<e_num; ++e) {
             const auto weight = edge_weight[e];
             dscore[edge[e].v1]+=weight;
@@ -560,17 +565,46 @@ public:
             /* choose a vertex u in C with the highest dscore,
               breaking ties in favor of the oldest one; */
             best_cov_v = remove_cand[0];
-            for (i=1; i<remove_cand_size; ++i) {
-                v = remove_cand[i];
-                if(v==tabu_remove)
-                    continue;
-                if( dscore[v] < dscore[best_cov_v])
-                    continue;
-                else if( dscore[v] > dscore[best_cov_v] )
-                    best_cov_v = v;
-                else if (time_stamp[v] < time_stamp[best_cov_v])
-                    best_cov_v = v;
+            #ifdef _OPENMP
+            std::vector<int> best_cov_cands;
+            #endif
+            #pragma omp parallel firstprivate(best_cov_v)
+            {
+              #ifdef _OPENMP
+              auto num_threads = omp_get_num_threads();
+              auto thread_id   = omp_get_thread_num();
+              #pragma omp single
+              {
+                best_cov_cands.resize(num_threads);
+              }
+              #endif
+              #pragma omp for schedule(static,1024)
+              for (i=1; i<remove_cand_size; ++i) {
+                  v = remove_cand[i];
+                  if(v==tabu_remove)
+                      continue;
+                  if( dscore[v] < dscore[best_cov_v])
+                      continue;
+                  else if( dscore[v] > dscore[best_cov_v] )
+                      best_cov_v = v;
+                  else if (time_stamp[v] < time_stamp[best_cov_v])
+                      best_cov_v = v;
+              }
+              #ifdef _OPENMP
+              best_cov_cands[thread_id] = best_cov_v;
+              #endif
             }
+            #ifdef _OPENMP
+            best_cov_v = best_cov_cands[0];
+            for(const auto & vert : best_cov_cands){
+                if( dscore[vert] < dscore[best_cov_v])
+                    continue;
+                else if( dscore[vert] > dscore[best_cov_v] )
+                    best_cov_v = vert;
+                else if (time_stamp[vert] < time_stamp[best_cov_v])
+                    best_cov_v = vert;
+            }
+            #endif
 
             /* C := C\{u}, confChange(u) := 0 and confChange(z) := 1 for each z in N(u); */
             remove(best_cov_v);
