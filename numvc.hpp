@@ -64,8 +64,9 @@ private:
     int    e_num;//|E|: 0...e-1
 
     /*structures about edge*/
-    std::vector<Edge> edge;
-    std::vector<int>  edge_weight;
+    std::vector<Edge>    edge;
+    std::vector<int>     edge_weight;
+    const int default_edge_weight = 1;
 
     /*structures about vertex*/
     std::vector<int>       dscore;     //dscore of v
@@ -119,10 +120,10 @@ private:
     heap_t v_heap;
 
     //smooth
-    int    ave_weight=1;
-    int    delta_total_weight=0;
-    int    threshold;
-    float  p_scale=0.3;//w=w*p
+    static constexpr float  p_scale=0.3;//w=w*p
+    int                     delta_total_weight=0;
+    int                     ave_weight=1;
+    int                     threshold;
 
     std::mt19937 mt_rand;
 
@@ -164,7 +165,7 @@ private:
         threshold = static_cast<int>(0.5*num_vertices);
 
         edge.resize(num_edges);
-        edge_weight.resize(num_edges);
+        edge_weight.resize(num_edges, default_edge_weight);
         dscore.resize(num_vertices);
         time_stamp.resize(num_vertices);
         v_degree.resize(num_vertices);
@@ -181,7 +182,7 @@ private:
         v_degree_tmp.resize(num_vertices);
 
         //CC and taboo
-        conf_change.resize(num_vertices);
+        conf_change.resize(num_vertices, 1);
     }
 
     // copy v_in_c to best_v_in_c
@@ -331,18 +332,11 @@ private:
 
         /*** build solution data structures of the instance ***/
         //init vertex cover
-        for (int v=1; v<=v_num; ++v) {
-            v_in_c[v] = 0;
-            dscore[v] = 0;
-
-            conf_change[v] = 1;
-            time_stamp[v]= 0; // to break ties
-        }
-
+        //conf_change = 1 (already set in resize call)
         for (int e=0; e<e_num; ++e) {
-            edge_weight[e] = 1;
-            dscore[edge[e].v1]+=edge_weight[e];
-            dscore[edge[e].v2]+=edge_weight[e];
+            const auto weight = edge_weight[e];
+            dscore[edge[e].v1]+=weight;
+            dscore[edge[e].v2]+=weight;
         }
 
         //init uncovered edge stack and cover_vertrex_count_of_edge array
@@ -534,7 +528,7 @@ public:
         step  = 1;
         start = std::chrono::system_clock::now();
 
-        while(1)// wihin cutoff_time
+        while(true)// wihin cutoff_time
             //while(step<=max_steps)
         {
             /* ### if there is no uncovered edge ### */
@@ -547,7 +541,6 @@ public:
                 if (c_size==optimal_size) return;
 
                 update_target_size();    // remove a vertex with the highest dscore from C;
-
                 continue;
             }
 
@@ -601,7 +594,6 @@ public:
                     best_add_v=v2;
             }
 
-
             /* C := C plus {v}, confChange(z) := 1 for each z in N(v); */
             add(best_add_v);
 
@@ -622,7 +614,7 @@ public:
             /* if w >= y then w(e) := [p*w(e)] for each edge e; */
             update_edge_weight();
 
-            step++;
+            ++step;
         }
         return;
     }
