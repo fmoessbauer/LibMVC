@@ -53,12 +53,15 @@ class Indexed_Heap {
 
     void shift_down(size_type pos){
       while(!is_leaf(pos)){
-        auto j = left_child(pos);
+        //std::cout << "shift _ down pos :" << pos << std::endl;
+        auto min = pos;
+        auto lc = left_child(pos);
         auto rc = right_child(pos);
-        if( (rc<data.size()) && (comp(data[rc], data[j])) ) j = rc;
-        if( comp(pos, j)) return;
-        element_swap(pos, j);
-        pos = j;
+        if( (lc<data.size()) && (!comp(data[lc], data[min])) ) min = lc;
+        if( (rc<data.size()) && (!comp(data[rc], data[min])) ) min = rc;
+        if( min == pos ) return;
+        element_swap(pos, min);
+        pos = min;
       }
     }
 
@@ -84,16 +87,17 @@ class Indexed_Heap {
       index[value] = curr;
       data.push_back(value);
 
-      while(curr!=0 && comp(data[curr], data[parent(curr)])){
+      while(curr!=0 && !comp(data[curr], data[parent(curr)])){
         element_swap(curr, parent(curr));
         curr = parent(curr);
       }
     }
 
     void pop(){
-      element_swap(0, data.size()-1);
       index.erase(data.back());
+      std::swap(data[0], data.back());
       data.pop_back();
+      index[data[0]] = 0;
       if(data.size() != 0) shift_down(0);
     }
 
@@ -116,7 +120,7 @@ class Indexed_Heap {
         index.erase(data.back());
         data.pop_back();
         auto idx = pos;
-        while( (idx !=0 ) && (comp(data[idx],data[parent(idx)]))){
+        while( (idx !=0 ) && (!comp(data[idx],data[parent(idx)]))){
           element_swap(idx, parent(idx));
           idx = parent(idx);
         }

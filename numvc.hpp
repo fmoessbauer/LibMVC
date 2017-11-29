@@ -337,7 +337,6 @@ private:
         /*** build solution data structures of the instance ***/
         //init vertex cover
         //conf_change = 1 (already set in resize call)
-        #pragma omp parallel for schedule(static,1024)
         for (int e=0; e<e_num; ++e) {
             const auto weight = edge_weight[e];
             dscore[edge[e].v1]+=weight;
@@ -418,13 +417,16 @@ private:
             n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
 
             if (v_in_c[n]==0) { //this adj isn't in cover set
-                if(v_heap.count(n) > 0){
+                bool inheap = v_heap.count(n) > 0;
+                if(inheap){
                   v_heap.erase(v_heap[n]);
                 }
                 dscore[n] -= edge_weight[e];
                 conf_change[n] = 1;
+                if(inheap){
+                  v_heap.push(n);
+                }
                 cover(e);
-                v_heap.push(n);
             } else {
                 dscore[n] += edge_weight[e];
             }
