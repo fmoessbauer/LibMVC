@@ -1,7 +1,6 @@
 find_package(Threads REQUIRED)
 include(ExternalProject)
 
-
 set(GBENCH_LIBRARY_PATH
     "$ENV{GBENCH_LIBRARY_PATH}" CACHE PATH
     "Library path in existing installation of google benchmark")
@@ -73,6 +72,8 @@ else()
   set_target_properties(
     GBench
     PROPERTIES
+    LINKER_LANGUAGE                   CXX
+    INTERFACE_INCLUDE_DIRECTORIES "${GBENCH_INCLUDES}"
     IMPORTED_LOCATION                 "${GBENCH_LIBRARY}"
     IMPORTED_LINK_INTERFACE_LIBRARIES "${CMAKE_THREAD_LIBS_INIT}")
   add_dependencies(GBench GBenchExternal)
