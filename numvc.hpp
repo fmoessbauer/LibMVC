@@ -514,9 +514,7 @@ public:
      */
     void cover_LS()
     {
-        cover_LS([](const NuMVC& v) {
-            return true;
-        });
+        cover_LS(nullptr);
     }
 
     /**
@@ -539,7 +537,7 @@ public:
             /* ### if there is no uncovered edge ### */
             if (uncov_stack_fill_pointer == 0) {
                 update_best_sol();      // C* := C
-                if(callback_on_update(*this)) {
+                if(callback_on_update != nullptr && callback_on_update(*this)) {
                     return;
                 }
 
