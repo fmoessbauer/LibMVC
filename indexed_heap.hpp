@@ -1,16 +1,20 @@
 #ifndef INDEXED_HEAP_INCLUDED
 #define INDEXED_HEAP_INCLUDED
 
+#include <limits>
 #include <vector>
-#include <map>
 #include <functional>
+#include <type_traits>
 
 template<
   typename T,
-  typename Container = std::vector<T>,
-  typename Index     = std::map<T, typename Container::size_type>,
   class    Compare   = std::less<T>>
 class Indexed_Heap {
+  static_assert(std::is_integral<T>::value, "Type has to be integral type");
+
+  private:
+    using Container       = std::vector<T>;
+    using Index           = std::vector<T>;
   public:
     using container_type  = Container;
     using value_compare   = Compare;
@@ -30,8 +34,8 @@ class Indexed_Heap {
         const size_type & b)
     {
       std::swap(data[a], data[b]);
-      index.at(data[a]) = a;
-      index.at(data[b]) = b;
+      index[data[a]] = a;
+      index[data[b]] = b;
     }
 
     bool is_leaf(const size_type & pos) const {
@@ -69,7 +73,25 @@ class Indexed_Heap {
     explicit Indexed_Heap(const Compare & compare = Compare())
     : comp(compare){ }
 
+    explicit Indexed_Heap(
+        const size_type & size,
+        const Compare & compare = Compare())
+    : index(size, std::numeric_limits<T>::max()),
+      comp(compare){
+        data.reserve(size);
+      }
+
   public:
+    void resize(const size_type & size){
+      data.reserve(size);
+      index.resize(size);
+    }
+
+    void clear() {
+      data.clear();
+      std::fill(index.begin(), index.end(), std::numeric_limits<T>::max());
+    }
+
     const_reference top() const {
       return data[0];
     }
@@ -94,7 +116,7 @@ class Indexed_Heap {
     }
 
     void pop(){
-      index.erase(data.back());
+      index[0] = std::numeric_limits<T>::max();
       std::swap(data[0], data.back());
       data.pop_back();
       index[data[0]] = 0;
@@ -105,7 +127,7 @@ class Indexed_Heap {
      * returns 1 if element is in heap, 0 otherwise
      */
     size_type count(const value_type & value) const {
-      return index.count(value);
+      return index[value] != std::numeric_limits<T>::max();
     }
 
     /**
@@ -113,11 +135,11 @@ class Indexed_Heap {
      */
     void erase(const size_type & pos){
       if(pos == (data.size()-1)){
-        index.erase(data.back());
+        index[data.back()] = std::numeric_limits<T>::max();
         data.pop_back();
       } else {
         element_swap(pos, data.size()-1);
-        index.erase(data.back());
+        index[data.back()] = std::numeric_limits<T>::max();
         data.pop_back();
         auto idx = pos;
         while( (idx !=0 ) && (!comp(data[idx],data[parent(idx)]))){
@@ -132,7 +154,7 @@ class Indexed_Heap {
      * return position in heap of given value
      */
     size_type operator[](const value_type & value) const {
-      return index.at(value);
+      return index[value];
     }
 };
 #endif

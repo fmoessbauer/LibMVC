@@ -116,11 +116,7 @@ private:
           dscore_cmp = [&](const int & a, const int & b)
     { return (dscore[a] < dscore[b]); };
 
-    using heap_t = Indexed_Heap<
-                      int,
-                      std::vector<int>,
-                      std::map<int, size_t>,
-                      decltype(dscore_cmp)>;
+    using heap_t = Indexed_Heap<int, decltype(dscore_cmp)>;
     heap_t v_heap;
 
     //smooth
@@ -184,6 +180,8 @@ private:
         uncov_stack.resize(num_edges);          //store the uncov edge number
         index_in_uncov_stack.resize(num_edges); //which position is an edge in the uncov_stack
         v_degree_tmp.resize(num_vertices);
+
+        v_heap.resize(num_vertices);
 
         //CC and taboo
         conf_change.resize(num_vertices, 1);
@@ -379,7 +377,7 @@ private:
     }
 
     // add a vertex to current cover
-    void add(int v)
+    inline void add(int v)
     {
         v_in_c[v] = 1;
         dscore[v] = -dscore[v];
@@ -433,7 +431,7 @@ private:
         }
     }
 
-    void remove(int v)
+    inline void remove(int v)
     {
         v_in_c[v] = 0;
         dscore[v] = -dscore[v];
@@ -613,7 +611,6 @@ public:
 
 
             /* choose an uncovered edge e randomly; */
-            //e = uncov_stack[rand()%uncov_stack_fill_pointer];
             e = uncov_stack[mt_rand()%uncov_stack_fill_pointer];
 
             /* choose a vertex v in e such that confChange(v) = 1 with higher dscore,

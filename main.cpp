@@ -22,11 +22,9 @@ int main(int argc, char* argv[])
 
     cout<<"c Improved NuMVC Local Search Solver"<<endl;
 
-    std::vector<int> solution;
-
     cout<<"c Start local search..."<<endl;
     solver.cover_LS(NuMVC::default_stats_printer);
-    solution = std::move(solver.get_independent_set());
+    std::vector<int> solution(std::move(solver.get_independent_set()));
 
     //check solution
     if(solver.check_solution()) {
