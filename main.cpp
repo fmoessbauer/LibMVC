@@ -34,13 +34,12 @@ int main(int argc, char* argv[])
   cout<<"c Start local search..."<<endl;
 
   solver.cover_LS(FastVC::default_stats_printer);
-  auto solution = solver.get_cover();
+  auto solution = solver.get_independent_set();
 
     //check solution
     if(solver.check_solution())
     {
-      cout<<"c Best found vertex cover size = "<<solution.size()<<endl;
-      solver.print_solution();
+      cout<<"c Best found vertex cover size = "<<solver.get_best_cover_size()<<endl;
       auto solver_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_best_duration());
       auto total_time_ms  = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_total_duration());
       double performance = static_cast<double>(solver.get_best_step()) / solver_time_ms.count() / 1000.0;

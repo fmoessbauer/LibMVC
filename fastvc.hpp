@@ -434,11 +434,9 @@ public:
     /**
      * calculate minimum vertex cover
      */
-    void cover_LS()
+    inline void cover_LS()
     {
-        cover_LS([](const FastVC& v){
-          return true;
-        });
+      cover_LS(nullptr);
     }
 
     /**
@@ -456,7 +454,7 @@ public:
         while(1) {
             if (uncov_stack.size() == 0) { //update best solution if needed
                 update_best_sol();
-                if(callback_on_update(*this)) {
+                if(callback_on_update != nullptr && callback_on_update(*this)) {
                     return;
                 }
                 if (c_size==optimal_size) return;
