@@ -33,6 +33,8 @@
 #include <algorithm>
 #include <random>
 
+#include <cstring>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -86,15 +88,15 @@ private:
 
     /* structures about solution */
     //current candidate solution
-    int              c_size;      //cardinality of C
-    std::vector<int> v_in_c;      //a flag indicates whether a vertex is in C
-    std::vector<int> remove_cand; //remove candidates, an array consists of only vertices in C, not including tabu_remove
-    std::vector<int> index_in_remove_cand;
-    int              remove_cand_size;
+    int               c_size;      //cardinality of C
+    std::vector<bool> v_in_c;      //a flag indicates whether a vertex is in C
+    std::vector<int>  remove_cand; //remove candidates, an array consists of only vertices in C, not including tabu_remove
+    std::vector<int>  index_in_remove_cand;
+    int               remove_cand_size;
 
     //best solution found
-    int              best_c_size;
-    std::vector<int> best_v_in_c; //a flag indicates whether a vertex is in best solution
+    int               best_c_size;
+    std::vector<bool> best_v_in_c; //a flag indicates whether a vertex is in best solution
 
     duration_ms best_comp_time;
     long        best_step;
@@ -153,7 +155,6 @@ public:
     {
         mt_rand.seed(rnd_seed);
         build_instance(str);
-        init_sol();
     }
 
 private:
@@ -280,7 +281,7 @@ private:
         int v,j;
         j=0;
         for (v=1; v<=v_num; ++v) {
-            if(v_in_c[v]==1) { // && v!=tabu_remove)
+            if(v_in_c[v]) { // && v!=tabu_remove)
                 remove_cand[j] = v;
                 index_in_remove_cand[v]=j;
                 ++j;
@@ -299,7 +300,7 @@ private:
         int max_vertex      = 0;//vertex with the highest improvement in C
 
         for (int v=1; v<=v_num; ++v) {
-            if(v_in_c[v]==0)continue;
+            if(!v_in_c[v])continue;
             if (dscore[v]>max_improvement) {
                 max_improvement = dscore[v];
                 max_vertex = v;
@@ -341,10 +342,19 @@ private:
         }
 
         //init uncovered edge stack and cover_vertrex_count_of_edge array
-        uncov_stack_fill_pointer = 0;
 
+#if 0
+        uncov_stack_fill_pointer = 0;
         for (int e=0; e<e_num; ++e)
             uncover(e);
+#else
+        // tweak to uncover all
+        std::iota(index_in_uncov_stack.begin(),
+                  index_in_uncov_stack.end(),
+                  0);
+        memcpy(uncov_stack.data(), index_in_uncov_stack.data(), e_num);
+        uncov_stack_fill_pointer = e_num;
+#endif
 
         for(int v=1; v<=v_num; ++v) {
             v_heap.push(v);
@@ -378,7 +388,7 @@ private:
     // add a vertex to current cover
     inline void add(int v)
     {
-        v_in_c[v] = 1;
+        v_in_c[v] = true;
         dscore[v] = -dscore[v];
 
         int i,e,n;
@@ -389,7 +399,7 @@ private:
             e = v_edges[v_beg_idx[v]+i]; // v's i'th edge
             n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
 
-            if (v_in_c[n]==0) { //this adj isn't in cover set
+            if (!v_in_c[n]) { //this adj isn't in cover set
                 dscore[n] -= edge_weight[e];
                 conf_change[n] = 1;
 
@@ -402,7 +412,7 @@ private:
 
     void add_init(int v)
     {
-        v_in_c[v] = 1;
+        v_in_c[v] = true;
         dscore[v] *= (-1);
 
         int i,e,n;
@@ -413,7 +423,7 @@ private:
             e = v_edges[v_beg_idx[v]+i]; // v's i'th edge
             n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
 
-            if (v_in_c[n]==0) { //this adj isn't in cover set
+            if (!v_in_c[n]) { //this adj isn't in cover set
                 bool inheap = v_heap.count(n) > 0;
                 if(inheap){
                   v_heap.erase(v_heap[n]);
@@ -432,7 +442,7 @@ private:
 
     inline void remove(int v)
     {
-        v_in_c[v] = 0;
+        v_in_c[v] = false;
         dscore[v] = -dscore[v];
         conf_change[v] = 0;
 
@@ -443,7 +453,7 @@ private:
             e = v_edges[v_beg_idx[v] + i];
             n = v_adj[v_beg_idx[v] + i];
 
-            if (v_in_c[n]==0) { //this adj isn't in cover set
+            if (!v_in_c[n]) { //this adj isn't in cover set
                 dscore[n] += edge_weight[e];
                 conf_change[n] = 1;
 
@@ -469,11 +479,11 @@ private:
             new_total_weight+=edge_weight[e];
 
             //update dscore
-            if (v_in_c[edge[e].v1]+v_in_c[edge[e].v2]==0) {
+            if (!(v_in_c[edge[e].v1] || v_in_c[edge[e].v2])) {
                 dscore[edge[e].v1]+=edge_weight[e];
                 dscore[edge[e].v2]+=edge_weight[e];
-            } else if(v_in_c[edge[e].v1]+v_in_c[edge[e].v2]==1) {
-                if(v_in_c[edge[e].v1]==1)dscore[edge[e].v1]-=edge_weight[e];
+            } else if(v_in_c[edge[e].v1] != v_in_c[edge[e].v2]) {
+                if(v_in_c[edge[e].v1])dscore[edge[e].v1]-=edge_weight[e];
                 else  dscore[edge[e].v2]-=edge_weight[e];
             }
         }
@@ -526,6 +536,9 @@ public:
         int    best_add_v;
         int    e,v1,v2;
         int    i,v;
+
+        // calculate inital cover
+        init_sol();
 
         step  = 1;
         start = std::chrono::system_clock::now();
@@ -655,7 +668,7 @@ public:
         int mis_vertex_count=0;
 
         for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]!=1)
+            if (!best_v_in_c[i])
                 mis_vertex_count++;
         }
 
@@ -670,7 +683,7 @@ public:
                   << std::endl;
 
         for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]!=1)//output max independent set
+            if (!best_v_in_c[i])//output max independent set
                 std::cout << i << "  ";
         }
         std::cout << std::endl;
@@ -681,7 +694,7 @@ public:
     {
         int e;
         for(e=0; e<e_num; ++e) {
-            if(best_v_in_c[edge[e].v1]!=1 && best_v_in_c[edge[e].v2]!=1) {
+            if(!(best_v_in_c[edge[e].v1] || best_v_in_c[edge[e].v2])) {
                 std::cout << "uncovered edge " << e << std::endl;
                 return false;
             }
@@ -697,7 +710,7 @@ public:
     {
         std::vector<int> cover;
         for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==1) {
+            if (best_v_in_c[i]) {
                 cover.push_back(i);
             }
         }
@@ -711,7 +724,7 @@ public:
     {
         std::vector<int> iset;
         for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==0) {
+            if (!best_v_in_c[i]) {
                 iset.push_back(i);
             }
         }
