@@ -268,8 +268,8 @@ private:
             v_adj[v_beg_idx[v1] + v_degree_tmp[v1]] = v2;
             v_adj[v_beg_idx[v2] + v_degree_tmp[v2]] = v1;
 
-            v_degree_tmp[v1]++;
-            v_degree_tmp[v2]++;
+            ++(v_degree_tmp[v1]);
+            ++(v_degree_tmp[v2]);
         }
 
         return 1;
@@ -290,15 +290,14 @@ private:
         remove_cand_size = j;
     }
 
-    // kick out the worst vertex in currennt cover
+    // kick out the worst vertex in current cover
     void update_target_size()
     {
         --c_size;
 
-        int max_improvement = 0;
+        int max_improvement = std::numeric_limits<int>::min();
         int max_vertex      = 0;//vertex with the highest improvement in C
 
-        max_improvement=-200000000;
         for (int v=1; v<=v_num; ++v) {
             if(v_in_c[v]==0)continue;
             if (dscore[v]>max_improvement) {
@@ -565,8 +564,8 @@ public:
             best_cov_v = remove_cand[0];
             #ifdef _OPENMP
             std::vector<int> best_cov_cands;
-            #endif
             #pragma omp parallel firstprivate(best_cov_v)
+            #endif
             {
               #ifdef _OPENMP
               auto num_threads = omp_get_num_threads();
@@ -575,8 +574,8 @@ public:
               {
                 best_cov_cands.resize(num_threads);
               }
-              #endif
               #pragma omp for schedule(static,1024)
+              #endif
               for (i=1; i<remove_cand_size; ++i) {
                   v = remove_cand[i];
                   if(v==tabu_remove)
@@ -616,7 +615,7 @@ public:
             v1 = edge[e].v1;
             v2 = edge[e].v2;
 
-            if(conf_change[v1]==0 ) best_add_v=v2;
+            if(conf_change[v1]==0) best_add_v=v2;
             else if(conf_change[v2]==0) best_add_v=v1;
             else {
                 if(dscore[v1]>dscore[v2] || (dscore[v1]==dscore[v2] && time_stamp[v1]<time_stamp[v2]) )
