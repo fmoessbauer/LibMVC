@@ -537,15 +537,15 @@ public:
         int    e,v1,v2;
         int    i,v;
 
-        // calculate inital cover
-        init_sol();
+        // No cover given, calculate inital cover
+        if(c_size == 0){
+            init_sol();
+        }
 
         step  = 1;
         start = std::chrono::system_clock::now();
 
-        while(true)// wihin cutoff_time
-            //while(step<=max_steps)
-        {
+        while(true){
             /* ### if there is no uncovered edge ### */
             if (uncov_stack_fill_pointer == 0) {
                 update_best_sol();      // C* := C
@@ -662,6 +662,28 @@ public:
         return;
     }
 
+    /**
+     * Start solver with this initial cover, given as a list of vertex indices
+     */
+    void set_initial_cover(const std::vector<int> & cover){
+        c_size = cover.size();
+        std::fill(v_in_c.begin(), v_in_c.end(), false);
+        for(const auto v : cover){
+            v_in_c[v] = true;
+        }
+        reset_remove_cand();
+        update_best_cov_v();
+    }
+
+    /**
+     * Start solver with this initial cover, given as a list of flags which
+     * denote if the vertex is in the cover
+     */
+    void set_initial_cover(const std::vector<bool> & cover){
+        v_in_c = cover;
+        c_size = std::count(cover.begin(), cover.end(), true);
+    }
+
     /*On solution*/
     void print_solution()
     {
@@ -704,8 +726,8 @@ public:
     }
 
     /**
-         * return vertex indices of current best vertex cover
-         */
+     * return vertex indices of current best vertex cover
+     */
     std::vector<int> get_cover()
     {
         std::vector<int> cover;
@@ -715,6 +737,10 @@ public:
             }
         }
         return cover;
+    }
+    std::vector<bool> get_cover_as_flaglist()
+    {
+        return v_in_c;
     }
 
     /**
