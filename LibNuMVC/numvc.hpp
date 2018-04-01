@@ -115,7 +115,7 @@ private:
     // priority queue for initial construction (max element at first index)
     // build heap by comparing dscores
     std::function<bool (const int &, const int &)>
-          dscore_cmp = [&](const int & a, const int & b)
+          dscore_cmp = [&dscore = dscore](const int & a, const int & b)
     { return (dscore[a] < dscore[b]); };
 
     using heap_t = Indexed_Heap<int, decltype(dscore_cmp)>;
@@ -155,6 +155,7 @@ public:
     {
         mt_rand.seed(rnd_seed);
         build_instance(str);
+        init_sol();
     }
 
 private:
@@ -536,11 +537,6 @@ public:
         int    best_add_v;
         int    e,v1,v2;
         int    i,v;
-
-        // No cover given, calculate inital cover
-        if(c_size == 0){
-            init_sol();
-        }
 
         step  = 1;
         start = std::chrono::system_clock::now();
