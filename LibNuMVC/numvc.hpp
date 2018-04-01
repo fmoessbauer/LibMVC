@@ -89,14 +89,14 @@ private:
     /* structures about solution */
     //current candidate solution
     int               c_size;      //cardinality of C
-    std::vector<bool> v_in_c;      //a flag indicates whether a vertex is in C
+    std::vector<char> v_in_c;      //a flag indicates whether a vertex is in C
     std::vector<int>  remove_cand; //remove candidates, an array consists of only vertices in C, not including tabu_remove
     std::vector<int>  index_in_remove_cand;
     int               remove_cand_size;
 
     //best solution found
     int               best_c_size;
-    std::vector<bool> best_v_in_c; //a flag indicates whether a vertex is in best solution
+    std::vector<char> best_v_in_c; //a flag indicates whether a vertex is in best solution
 
     duration_ms best_comp_time;
     long        best_step;
@@ -679,7 +679,7 @@ public:
      * Start solver with this initial cover, given as a list of flags which
      * denote if the vertex is in the cover
      */
-    void set_initial_cover(const std::vector<bool> & cover){
+    void set_initial_cover(const std::vector<char> & cover){
         v_in_c = cover;
         c_size = std::count(cover.begin(), cover.end(), true);
     }
@@ -738,7 +738,7 @@ public:
         }
         return cover;
     }
-    std::vector<bool> get_cover_as_flaglist()
+    std::vector<char> get_cover_as_flaglist()
     {
         return v_in_c;
     }
