@@ -45,17 +45,13 @@ class NuMVC {
 private:
     using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
     using duration_ms = std::chrono::milliseconds;
+    using Edge        = std::pair<int,int>;
 
 private:
 
     bool verbose = false;
 
     timepoint_t start, finish;
-
-    struct Edge {
-        int v1;
-        int v2;
-    };
 
     const int try_step = 100000;
 
@@ -268,8 +264,7 @@ private:
             ++(v_degree[v1]);
             ++(v_degree[v2]);
 
-            edge[e].v1 = v1;
-            edge[e].v2 = v2;
+            edge[e] = {v1,v2};
         }
         update_instance_internal();
     }
@@ -284,7 +279,7 @@ private:
       for(unsigned int e=0; e<edges.size(); ++e){
         ++(v_degree[edges[e].first]);
         ++(v_degree[edges[e].second]);
-        edge[e] = {edges[e].first, edges[e].second};
+        edge[e] = edges[e];
       }
       update_instance_internal();
     }
@@ -306,8 +301,8 @@ private:
         int v1,v2;
         std::vector<int> v_degree_tmp(v_num + 1);
         for (int e=0; e<e_num; ++e) {
-            v1=edge[e].v1;
-            v2=edge[e].v2;
+            v1=edge[e].first;
+            v2=edge[e].second;
 
             v_edges[v_beg_idx[v1] + v_degree_tmp[v1]] = e;
             v_edges[v_beg_idx[v2] + v_degree_tmp[v2]] = e;
@@ -381,8 +376,8 @@ private:
         //conf_change = 1 (already set in resize call)
         for (int e=0; e<e_num; ++e) {
             const auto weight = edge_weight[e];
-            dscore[edge[e].v1]+=weight;
-            dscore[edge[e].v2]+=weight;
+            dscore[edge[e].first]+=weight;
+            dscore[edge[e].second]+=weight;
         }
 
         //init uncovered edge stack and cover_vertrex_count_of_edge array
@@ -523,12 +518,12 @@ private:
             new_total_weight+=edge_weight[e];
 
             //update dscore
-            if (!(v_in_c[edge[e].v1] || v_in_c[edge[e].v2])) {
-                dscore[edge[e].v1]+=edge_weight[e];
-                dscore[edge[e].v2]+=edge_weight[e];
-            } else if(v_in_c[edge[e].v1] != v_in_c[edge[e].v2]) {
-                if(v_in_c[edge[e].v1])dscore[edge[e].v1]-=edge_weight[e];
-                else  dscore[edge[e].v2]-=edge_weight[e];
+            if (!(v_in_c[edge[e].first] || v_in_c[edge[e].second])) {
+                dscore[edge[e].first]+=edge_weight[e];
+                dscore[edge[e].second]+=edge_weight[e];
+            } else if(v_in_c[edge[e].first] != v_in_c[edge[e].second]) {
+                if(v_in_c[edge[e].first]) dscore[edge[e].first]-=edge_weight[e];
+                else  dscore[edge[e].second]-=edge_weight[e];
             }
         }
         ave_weight=new_total_weight/e_num;
@@ -543,8 +538,8 @@ private:
             e = uncov_stack[i];
 
             edge_weight[e]+= 1;
-            dscore[edge[e].v1] += 1;
-            dscore[edge[e].v2] += 1;
+            dscore[edge[e].first] += 1;
+            dscore[edge[e].second] += 1;
         }
 
 
@@ -664,8 +659,8 @@ public:
 
             /* choose a vertex v in e such that confChange(v) = 1 with higher dscore,
               breaking ties in favor of the older one; */
-            v1 = edge[e].v1;
-            v2 = edge[e].v2;
+            v1 = edge[e].first;
+            v2 = edge[e].second;
 
             if(conf_change[v1]==0) best_add_v=v2;
             else if(conf_change[v2]==0) best_add_v=v1;
@@ -755,7 +750,7 @@ public:
     {
         int e;
         for(e=0; e<e_num; ++e) {
-            if(!(best_v_in_c[edge[e].v1] || best_v_in_c[edge[e].v2])) {
+            if(!(best_v_in_c[edge[e].first] || best_v_in_c[edge[e].second])) {
                 std::cout << "uncovered edge " << e << std::endl;
                 return false;
             }
