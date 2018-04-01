@@ -42,10 +42,12 @@
 #include "indexed_heap.hpp"
 
 class NuMVC {
+public:
+    using Edge        = std::pair<int,int>;
+
 private:
     using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
     using duration_ms = std::chrono::milliseconds;
-    using Edge        = std::pair<int,int>;
 
 private:
 
@@ -210,11 +212,11 @@ private:
         conf_change.resize(num_vertices, 1);
     }
 
-    // copy v_in_c to best_v_in_c
     void update_best_sol()
     {
         int i;
 
+        // copy v_in_c to best_v_in_c
         for (i=1; i<=v_num; i++) {
             best_v_in_c[i] = v_in_c[i];
         }
@@ -279,8 +281,8 @@ private:
       for(unsigned int e=0; e<edges.size(); ++e){
         ++(v_degree[edges[e].first]);
         ++(v_degree[edges[e].second]);
-        edge[e] = edges[e];
       }
+      edge = edges;
       update_instance_internal();
     }
 
@@ -772,10 +774,15 @@ public:
         mt_rand.seed(seed);
     }
 
+    std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const
+    {
+      return std::make_pair(v_num, edge);
+    }
+
     /**
      * return vertex indices of current best vertex cover
      */
-    std::vector<int> get_cover()
+    std::vector<int> get_cover() const
     {
         std::vector<int> cover;
         for (int i=1; i<=v_num; i++) {
@@ -785,7 +792,8 @@ public:
         }
         return cover;
     }
-    std::vector<char> get_cover_as_flaglist()
+
+    std::vector<char> get_cover_as_flaglist() const
     {
         return v_in_c;
     }
@@ -793,7 +801,7 @@ public:
     /**
      * return vertex indices of current best independent set
      */
-    std::vector<int> get_independent_set()
+    std::vector<int> get_independent_set() const
     {
         std::vector<int> iset;
         for (int i=1; i<=v_num; i++) {
