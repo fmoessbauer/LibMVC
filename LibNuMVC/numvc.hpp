@@ -57,7 +57,7 @@ private:
         int v2;
     };
 
-    const int try_step = 600000;
+    const int try_step = 100000;
 
     /*parameters of algorithm*/
     long long   max_steps;      //step limit
@@ -158,6 +158,31 @@ public:
         init_sol();
     }
 
+    template<typename Duration>
+    NuMVC(
+        /// Graph in edge-list format
+        const std::vector<std::pair<int,int>> & edges,
+        /// Number of vertices in graph
+        const int & num_vertices,
+        /// Size of optimal vertex cover (set to 0 if not known)
+        int optimal_size,
+        /// Stop calculation after this duration (chrono duration)
+        Duration cutoff_time,
+        /// Print messages during calculation
+        bool verbose = false,
+        /// seed for random number generator
+        unsigned int rnd_seed =
+            std::chrono::high_resolution_clock::now().time_since_epoch().count())
+        : verbose(verbose),
+          cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
+          optimal_size(optimal_size),
+          v_heap(dscore_cmp)
+    {
+        mt_rand.seed(rnd_seed);
+        build_instance(num_vertices, edges);
+        init_sol();
+    }
+
 private:
     void init_internal(int num_vertices, int num_edges)
     {
@@ -221,12 +246,12 @@ private:
     }
 
     template<typename Is>
-    int build_instance(Is & str)
+    void build_instance(Is & str)
     {
         char line[1024];
         char tempstr1[10];
         char tempstr2[10];
-        int  v,e;
+        int  e;
 
         char  tmp;
         int   v1,v2;
@@ -238,19 +263,38 @@ private:
         sscanf(line, "%s %s %d %d", tempstr1, tempstr2, &v_num, &e_num);
         init_internal(v_num, e_num);
 
-        /* read edges and compute v_degree */
-        for (v=1; v<=v_num; v++)
-            v_degree[v] = 0;
-
-        for (e=0; e<e_num; e++) {
+        for (e=0; e<e_num; ++e) {
             str>>tmp>>v1>>v2;
-            v_degree[v1]++;
-            v_degree[v2]++;
+            ++(v_degree[v1]);
+            ++(v_degree[v2]);
 
             edge[e].v1 = v1;
             edge[e].v2 = v2;
         }
+        update_instance_internal();
+    }
 
+    void build_instance(
+        const int & num_vertices,
+        const std::vector<std::pair<int,int>> & edges)
+    {
+      v_num = num_vertices;
+      e_num = edges.size();
+
+      for(unsigned int e=0; e<edges.size(); ++e){
+        ++(v_degree[edges[e].first]);
+        ++(v_degree[edges[e].second]);
+        edge[e] = {edges[e].first, edges[e].second};
+      }
+      update_instance_internal();
+    }
+
+    /**
+     * builds internal data structures for processing this instance.
+     * has to be called after loading a new instance using
+     * build_instance
+     */
+    void update_instance_internal(){
         /* indices are the partial sums */
         v_beg_idx.reserve(e_num+1);
         v_beg_idx.push_back(0); // shift by one as partial sum calculates end_index
@@ -259,13 +303,14 @@ private:
         v_edges.resize(v_beg_idx.back());
         v_adj.resize(v_beg_idx.back());
 
+        int v1,v2;
         std::vector<int> v_degree_tmp(v_num + 1);
-        for (e=0; e<e_num; ++e) {
+        for (int e=0; e<e_num; ++e) {
             v1=edge[e].v1;
             v2=edge[e].v2;
 
-            v_edges[v_beg_idx.at(v1) + v_degree_tmp[v1]] = e;
-            v_edges[v_beg_idx.at(v2) + v_degree_tmp[v2]] = e;
+            v_edges[v_beg_idx[v1] + v_degree_tmp[v1]] = e;
+            v_edges[v_beg_idx[v2] + v_degree_tmp[v2]] = e;
 
             v_adj[v_beg_idx[v1] + v_degree_tmp[v1]] = v2;
             v_adj[v_beg_idx[v2] + v_degree_tmp[v2]] = v1;
@@ -273,8 +318,6 @@ private:
             ++(v_degree_tmp[v1]);
             ++(v_degree_tmp[v2]);
         }
-
-        return 1;
     }
 
     void reset_remove_cand()
@@ -719,6 +762,19 @@ public:
         }
 
         return true;
+    }
+
+    template<typename Duration>
+    void set_cutoff_time(Duration d){
+        cutoff_time = std::chrono::duration_cast<duration_ms>(d);
+    }
+
+    void set_optimal_size(int size){
+        optimal_size = size;
+    }
+
+    void set_random_seed(unsigned int seed){
+        mt_rand.seed(seed);
     }
 
     /**
