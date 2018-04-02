@@ -31,13 +31,8 @@
 #include <numeric>
 #include <functional>
 #include <algorithm>
-#include <random>
-
 #include <cstring>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include <random>
 
 #include "indexed_heap.hpp"
 
@@ -119,7 +114,13 @@ private:
     int                     ave_weight=1;
     int                     threshold;
 
+    //random
+#ifdef USE_SFMT
+    sfmt_t sfmt;
+#else
     std::mt19937 mt_rand;
+#endif
+    std::unique_ptr<uint64_t> rd_pool;
 
 public:
     /**
@@ -144,7 +145,7 @@ public:
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
           optimal_size(optimal_size)
     {
-        mt_rand.seed(rnd_seed);
+        set_random_seed(rnd_seed);
         build_instance(str);
         init_sol();
     }
@@ -168,7 +169,7 @@ public:
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
           optimal_size(optimal_size)
     {
-        mt_rand.seed(rnd_seed);
+        set_random_seed(rnd_seed);
         build_instance(num_vertices, edges);
         init_sol();
     }
@@ -214,6 +215,9 @@ private:
         best_step = step;
     }
 
+    /** choose a vertex u in C with the highest dscore,
+      * breaking ties in favor of the oldest one;
+      */
     void update_best_cov_v()
     {
         int i,v;
@@ -571,16 +575,16 @@ public:
      */
     void cover_LS(const std::function<bool (const NuMVC&)> & callback_on_update)
     {
-        int    best_cov_v;    //the vertex of the highest dscore in C
-        int    best_add_v;
-        int    e,v1,v2;
-        int    i,v;
+        int      best_add_v;
+        int      e,v1,v2;
+        uint64_t next_rnd;
 
+        // initialize random pool
         step  = 1;
         start = std::chrono::system_clock::now();
 
         while(true){
-            /* ### if there is no uncovered edge ### */
+           /* ### if there is no uncovered edge ### */
             if (uncov_stack_fill_pointer <= 0) {
                 update_best_sol();      // C* := C
                 if(callback_on_update != nullptr && callback_on_update(*this)) {
@@ -594,7 +598,6 @@ public:
             }
 
             /* monitor status */
-
             if(step % try_step==0) {
                 finish = std::chrono::system_clock::now();
                 auto elapsed_ms  = std::chrono::duration_cast<duration_ms>(finish - start);
@@ -608,54 +611,15 @@ public:
 
             /* choose a vertex u in C with the highest dscore,
               breaking ties in favor of the oldest one; */
-            best_cov_v = remove_cand[0];
-            #ifdef _OPENMP
-            std::vector<int> best_cov_cands;
-            #pragma omp parallel firstprivate(best_cov_v)
-            #endif
-            {
-              #ifdef _OPENMP
-              auto num_threads = omp_get_num_threads();
-              auto thread_id   = omp_get_thread_num();
-              #pragma omp single
-              {
-                best_cov_cands.resize(num_threads);
-              }
-              #pragma omp for schedule(static,1024)
-              #endif
-              for (i=1; i<remove_cand_size; ++i) {
-                  v = remove_cand[i];
-                  if(v==tabu_remove)
-                      continue;
-                  if( dscore[v] < dscore[best_cov_v])
-                      continue;
-                  else if( dscore[v] > dscore[best_cov_v] )
-                      best_cov_v = v;
-                  else if (time_stamp[v] < time_stamp[best_cov_v])
-                      best_cov_v = v;
-              }
-              #ifdef _OPENMP
-              best_cov_cands[thread_id] = best_cov_v;
-              #endif
-            }
-            #ifdef _OPENMP
-            best_cov_v = best_cov_cands[0];
-            for(const auto & vert : best_cov_cands){
-                if( dscore[vert] < dscore[best_cov_v])
-                    continue;
-                else if( dscore[vert] > dscore[best_cov_v] )
-                    best_cov_v = vert;
-                else if (time_stamp[vert] < time_stamp[best_cov_v])
-                    best_cov_v = vert;
-            }
-            #endif
+            update_best_cov_v();
 
             /* C := C\{u}, confChange(u) := 0 and confChange(z) := 1 for each z in N(u); */
             remove(best_cov_v);
 
-
             /* choose an uncovered edge e randomly; */
-            e = uncov_stack[mt_rand()%uncov_stack_fill_pointer];
+
+            next_rnd = mt_rand();
+            e = uncov_stack[next_rnd % uncov_stack_fill_pointer];
 
             /* choose a vertex v in e such that confChange(v) = 1 with higher dscore,
               breaking ties in favor of the older one; */
