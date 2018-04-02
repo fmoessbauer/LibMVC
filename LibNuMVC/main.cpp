@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 
     std::string filename(argv[1]);
     std::ifstream file(filename, std::ios::in);
-    NuMVC solver(file, optimal_size, std::chrono::seconds(cutoff_time), true);
+    NuMVC solver(file, optimal_size, std::chrono::seconds(cutoff_time), true, 0u);
 
     cout<<"c Improved NuMVC Local Search Solver"<<endl;
 
