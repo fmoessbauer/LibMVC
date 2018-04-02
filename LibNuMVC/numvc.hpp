@@ -184,9 +184,6 @@ public:
 private:
     void init_internal(int num_vertices, int num_edges)
     {
-        ++num_vertices;
-        ++num_edges;
-
         threshold = static_cast<int>(0.5*num_vertices);
 
         edge.resize(num_edges);
@@ -217,7 +214,7 @@ private:
         int i;
 
         // copy v_in_c to best_v_in_c
-        for (i=1; i<=v_num; i++) {
+        for (i=0; i<v_num; ++i) {
             best_v_in_c[i] = v_in_c[i];
         }
 
@@ -231,7 +228,7 @@ private:
     {
         int i,v;
         best_cov_v = remove_cand[0];
-        for (i=1; i<remove_cand_size; ++i) {
+        for (i=0; i<remove_cand_size-1; ++i) {
             v = remove_cand[i];
             if(v==tabu_remove) continue;
             if( dscore[v] < dscore[best_cov_v])
@@ -263,6 +260,9 @@ private:
 
         for (e=0; e<e_num; ++e) {
             str>>tmp>>v1>>v2;
+            // start counting at zero
+            --v1;
+            --v2;
             ++(v_degree[v1]);
             ++(v_degree[v2]);
 
@@ -278,6 +278,8 @@ private:
       v_num = num_vertices;
       e_num = edges.size();
 
+      init_internal(v_num, e_num);
+
       for(unsigned int e=0; e<edges.size(); ++e){
         ++(v_degree[edges[e].first]);
         ++(v_degree[edges[e].second]);
@@ -292,16 +294,17 @@ private:
      * build_instance
      */
     void update_instance_internal(){
-        /* indices are the partial sums */
-        v_beg_idx.reserve(e_num+1);
-        v_beg_idx.push_back(0); // shift by one as partial sum calculates end_index
-        std::partial_sum(v_degree.begin(), v_degree.end(), std::back_inserter(v_beg_idx));
+        // indices are the partial sums
+        // first offset is 0, last is partial exclusive last element
+        v_beg_idx.reserve(e_num);
+        v_beg_idx.push_back(0);
+        std::partial_sum(v_degree.begin(), v_degree.end()-1, std::back_inserter(v_beg_idx));
 
         v_edges.resize(v_beg_idx.back());
         v_adj.resize(v_beg_idx.back());
 
         int v1,v2;
-        std::vector<int> v_degree_tmp(v_num + 1);
+        std::vector<int> v_degree_tmp(v_num);
         for (int e=0; e<e_num; ++e) {
             v1=edge[e].first;
             v2=edge[e].second;
@@ -321,7 +324,7 @@ private:
     {
         int v,j;
         j=0;
-        for (v=1; v<=v_num; ++v) {
+        for (v=0; v<v_num; ++v) {
             if(v_in_c[v]) { // && v!=tabu_remove)
                 remove_cand[j] = v;
                 index_in_remove_cand[v]=j;
@@ -340,7 +343,7 @@ private:
         int max_improvement = std::numeric_limits<int>::min();
         int max_vertex      = 0;//vertex with the highest improvement in C
 
-        for (int v=1; v<=v_num; ++v) {
+        for (int v=0; v<v_num; ++v) {
             if(!v_in_c[v])continue;
             if (dscore[v]>max_improvement) {
                 max_improvement = dscore[v];
@@ -397,7 +400,7 @@ private:
         uncov_stack_fill_pointer = e_num;
 #endif
 
-        for(int v=1; v<=v_num; ++v) {
+        for(int v=0; v<v_num; ++v) {
             v_heap.push(v);
         }
 
@@ -510,7 +513,7 @@ private:
         int v,e;
         int new_total_weight=0;
 
-        for(v=1; v<=v_num; v++)
+        for(v=0; v<v_num; ++v)
             dscore[v]=0;
 
         //scale_ave=ave_weight*q_scale;
@@ -725,7 +728,7 @@ public:
     {
         int mis_vertex_count=0;
 
-        for (int i=1; i<=v_num; i++) {
+        for (int i=0; i<v_num; ++i) {
             if (!best_v_in_c[i])
                 mis_vertex_count++;
         }
@@ -740,7 +743,7 @@ public:
         std::cout << "c The following output is the found independent set."
                   << std::endl;
 
-        for (int i=1; i<=v_num; i++) {
+        for (int i=0; i<v_num; ++i) {
             if (!best_v_in_c[i])//output max independent set
                 std::cout << i << "  ";
         }
@@ -785,7 +788,7 @@ public:
     std::vector<int> get_cover() const
     {
         std::vector<int> cover;
-        for (int i=1; i<=v_num; i++) {
+        for (int i=0; i<v_num; i++) {
             if (best_v_in_c[i]) {
                 cover.push_back(i);
             }
@@ -804,7 +807,7 @@ public:
     std::vector<int> get_independent_set() const
     {
         std::vector<int> iset;
-        for (int i=1; i<=v_num; i++) {
+        for (int i=0; i<v_num; i++) {
             if (!best_v_in_c[i]) {
                 iset.push_back(i);
             }
