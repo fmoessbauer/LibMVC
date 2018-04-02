@@ -49,6 +49,9 @@ private:
     using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
     using duration_ms = std::chrono::milliseconds;
 
+    using compare_t = std::function<bool (const int &, const int &)>;
+    using heap_t    = Indexed_Heap<int, compare_t>;
+
 private:
 
     bool verbose = false;
@@ -110,15 +113,6 @@ private:
     std::vector<int> conf_change;
     int              tabu_remove=0;
 
-    // priority queue for initial construction (max element at first index)
-    // build heap by comparing dscores
-    std::function<bool (const int &, const int &)>
-          dscore_cmp = [&dscore = dscore](const int & a, const int & b)
-    { return (dscore[a] < dscore[b]); };
-
-    using heap_t = Indexed_Heap<int, decltype(dscore_cmp)>;
-    heap_t v_heap;
-
     //smooth
     static constexpr float  p_scale=0.3;//w=w*p
     int                     delta_total_weight=0;
@@ -148,8 +142,7 @@ public:
             std::chrono::high_resolution_clock::now().time_since_epoch().count())
         : verbose(verbose),
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-          optimal_size(optimal_size),
-          v_heap(dscore_cmp)
+          optimal_size(optimal_size)
     {
         mt_rand.seed(rnd_seed);
         build_instance(str);
@@ -173,8 +166,7 @@ public:
             std::chrono::high_resolution_clock::now().time_since_epoch().count())
         : verbose(verbose),
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-          optimal_size(optimal_size),
-          v_heap(dscore_cmp)
+          optimal_size(optimal_size)
     {
         mt_rand.seed(rnd_seed);
         build_instance(num_vertices, edges);
@@ -202,8 +194,6 @@ private:
         uncov_stack.resize(num_edges);          //store the uncov edge number
         index_in_uncov_stack.resize(num_edges); //which position is an edge in the uncov_stack
         v_degree_tmp.resize(num_vertices);
-
-        v_heap.resize(num_vertices);
 
         //CC and taboo
         conf_change.resize(num_vertices, 1);
@@ -295,10 +285,10 @@ private:
      */
     void update_instance_internal(){
         // indices are the partial sums
-        // first offset is 0, last is partial exclusive last element
+        // first offset is 0, last is partial including last element
         v_beg_idx.reserve(e_num);
         v_beg_idx.push_back(0);
-        std::partial_sum(v_degree.begin(), v_degree.end()-1, std::back_inserter(v_beg_idx));
+        std::partial_sum(v_degree.begin(), v_degree.end(), std::back_inserter(v_beg_idx));
 
         v_edges.resize(v_beg_idx.back());
         v_adj.resize(v_beg_idx.back());
@@ -376,6 +366,11 @@ private:
     {
         start = std::chrono::system_clock::now();
 
+        auto dscore_cmp = [&dscore = dscore](const int & a, const int & b)
+                          { return (dscore[a] < dscore[b]); };
+        heap_t v_heap(dscore_cmp);
+        v_heap.resize(v_num);
+
         /*** build solution data structures of the instance ***/
         //init vertex cover
         //conf_change = 1 (already set in resize call)
@@ -409,7 +404,7 @@ private:
             int best_v = v_heap.top();
             v_heap.pop();
             if(dscore[best_v]>0) {
-                add_init(best_v);
+                add_init(best_v, v_heap);
                 ++i;
             }
         }
@@ -430,7 +425,7 @@ private:
     }
 
     // add a vertex to current cover
-    inline void add(int v)
+    void add(int v)
     {
         v_in_c[v] = true;
         dscore[v] = -dscore[v];
@@ -454,7 +449,7 @@ private:
         }
     }
 
-    void add_init(int v)
+    void add_init(int v, heap_t & v_heap)
     {
         v_in_c[v] = true;
         dscore[v] *= (-1);
@@ -484,7 +479,7 @@ private:
         }
     }
 
-    inline void remove(int v)
+    void remove(int v)
     {
         v_in_c[v] = false;
         dscore[v] = -dscore[v];
@@ -586,7 +581,7 @@ public:
 
         while(true){
             /* ### if there is no uncovered edge ### */
-            if (uncov_stack_fill_pointer == 0) {
+            if (uncov_stack_fill_pointer <= 0) {
                 update_best_sol();      // C* := C
                 if(callback_on_update != nullptr && callback_on_update(*this)) {
                     return;
