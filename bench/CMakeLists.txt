@@ -1,7 +1,5 @@
 set(SOURCES "main")
 
-include(../CMakeExt/GoogleBenchmark.cmake)
-
 set(RELEASE_COMPILE_FLAGS "-O3 -Wall")
 set(DEBUG_COMPILE_FLAGS "-g -Wall -Werror") 
 
@@ -18,5 +16,4 @@ else()
   set_target_properties("${PROJECT_NAME}-bench" PROPERTIES COMPILE_FLAGS "${RELEASE_COMPILE_FLAGS} ${OMP_FLAG}")
 endif()
 
-target_link_libraries("${PROJECT_NAME}-bench" GBench )
-
+target_link_libraries("${PROJECT_NAME}-bench" benchmark)

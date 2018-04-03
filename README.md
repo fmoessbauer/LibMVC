@@ -53,8 +53,7 @@ std::vector<int> solution = std::move(solver.get_independent_set());
 ## Benchmarks
 
 Benchmarks are provided for all solvers, using the google benchmark library.
-If building using the provided CMake scripts, google benchmark is automatically
-downloaded and integrated into the project.
+The library is included as a git submodule, hence clone using `git clone --recursive`.
 To simplify building and also as a good starting point, the `build.sh` script can be used.
 
 To keep the repository small, only a small sample graph is included in `bench/data`.
