@@ -44,7 +44,6 @@ class FastVC {
   timepoint_t start, finish;
 
   /*parameters of algorithm*/
-  long long max_steps;      // step limit
   duration_ms cutoff_time;  // time limit
   long long step;
   int optimal_size;  // terminate the algorithm before step limit if it finds a
@@ -92,8 +91,6 @@ class FastVC {
   int uncov_stack_fill_pointer;
   std::vector<int>
       index_in_uncov_stack;  // which position is an edge in the uncov_stack
-
-  int edge_cand;
 
   // random
   std::mt19937 mt_rand;

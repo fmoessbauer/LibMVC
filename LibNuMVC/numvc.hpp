@@ -54,7 +54,6 @@ class NuMVC {
   timepoint_t start, finish;
 
   /*parameters of algorithm*/
-  long long max_steps;      // step limit
   duration_ms cutoff_time;  // time limit
   long long step;
   int optimal_size;  // terminate the algorithm before step limit if it finds a
@@ -411,7 +410,7 @@ class NuMVC {
   // add a vertex to current cover
   void add(int v) {
     v_in_c[v] = true;
-    dscore[v] = -dscore[v];
+    dscore[v] *= -1;
 
     int i, e, n;
 
