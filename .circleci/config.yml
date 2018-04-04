@@ -1,0 +1,17 @@
+version: 2
+jobs:
+  build_gcc:
+    docker:
+      - image: thoughton/gcc-cmake:latest
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive --remote
+      - run: bash build.sh
+      - run: ./build/test/LibMVC-test
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_gcc
+
