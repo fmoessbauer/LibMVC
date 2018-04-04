@@ -49,11 +49,11 @@ private:
 
 private:
 
+    static constexpr int try_step = 100000;
+
     bool verbose = false;
 
     timepoint_t start, finish;
-
-    const int try_step = 100000;
 
     /*parameters of algorithm*/
     long long   max_steps;      //step limit
@@ -99,7 +99,7 @@ private:
 
     //uncovered edge stack
     std::vector<int> uncov_stack;          //store the uncov edge number
-    int    uncov_stack_fill_pointer;
+    int              uncov_stack_fill_pointer;
     std::vector<int> index_in_uncov_stack; //which position is an edge in the uncov_stack
     std::vector<int> v_degree_tmp;
 
@@ -115,12 +115,7 @@ private:
     int                     threshold;
 
     //random
-#ifdef USE_SFMT
-    sfmt_t sfmt;
-#else
     std::mt19937 mt_rand;
-#endif
-    std::unique_ptr<uint64_t> rd_pool;
 
 public:
     /**
@@ -202,13 +197,7 @@ private:
 
     void update_best_sol()
     {
-        int i;
-
-        // copy v_in_c to best_v_in_c
-        for (i=0; i<v_num; ++i) {
-            best_v_in_c[i] = v_in_c[i];
-        }
-
+        best_v_in_c = v_in_c;
         best_c_size = c_size;
         finish = std::chrono::system_clock::now();
         best_comp_time = std::chrono::duration_cast<duration_ms>(finish - start);
@@ -486,7 +475,7 @@ private:
     void remove(int v)
     {
         v_in_c[v] = false;
-        dscore[v] = -dscore[v];
+        dscore[v] *= -1;
         conf_change[v] = 0;
 
         int i,e,n;
