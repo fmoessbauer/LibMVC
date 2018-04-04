@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "fetch set of common graphs"
-cd data
+cd ../data
 wget -r -nd --no-parent -A '*-mis.tar.gz' "http://sites.nlsde.buaa.edu.cn/~kexu/benchmarks/"
 
 echo "extract graphs"
