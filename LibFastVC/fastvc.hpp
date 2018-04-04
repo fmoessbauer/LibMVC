@@ -22,24 +22,27 @@
 #include <vector>
 #include <numeric>
 #include <functional>
+#include <algorithm>
+#include <cstring>
+#include <random>
 
 /**
  * Local search solver for Minimum Vertex Cover
  */
 class FastVC {
+public:
+    using Edge        = std::pair<int,int>;
+
 private:
     using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
     using duration_ms = std::chrono::milliseconds;
+
+    static constexpr int try_step = 10;     // check time each number of steps
 
     /* print messages while solving */
     bool verbose = false;
 
     timepoint_t start, finish;
-
-    struct Edge {
-        int v1;
-        int v2;
-    };
 
     /*parameters of algorithm*/
     long long   max_steps;      //step limit
@@ -69,7 +72,7 @@ private:
     /* structures about solution */
     //current candidate solution
     int               c_size;              //cardinality of C
-    std::vector<bool> v_in_c;              //a flag indicates whether a vertex is in C
+    std::vector<char> v_in_c;              //a flag indicates whether a vertex is in C
     //remove candidates, an array consists of only vertices in C, not including tabu_remove
     //use custom stack for perfomance reasons
     std::vector<int>  remove_cand;
@@ -78,17 +81,20 @@ private:
 
     //best solution found
     int               best_c_size;
-    std::vector<bool> best_v_in_c;        //a flag indicates whether a vertex is in best solution
+    std::vector<char> best_v_in_c;        //a flag indicates whether a vertex is in best solution
     duration_ms       best_comp_time;
     long              best_step;
 
 
     //uncovered edge stack
     std::vector<int>  uncov_stack;          //store the uncov edge number
+    int               uncov_stack_fill_pointer;
     std::vector<int>  index_in_uncov_stack; //which position is an edge in the uncov_stack
 
-    int                  edge_cand;
-    static constexpr int try_step = 10;     // check time each number of steps
+    int               edge_cand;
+
+    //random
+    std::mt19937 mt_rand;
 
 public:
     /**
@@ -105,22 +111,61 @@ public:
         /// Stop calculation after this duration (chrono duration)
         Duration cutoff_time,
         /// Print messages during calculation
-        bool verbose = false)
+        bool verbose = false,
+        /// seed for random number generator
+        unsigned int rnd_seed =
+            std::chrono::high_resolution_clock::now().time_since_epoch().count())
         : verbose(verbose),
           cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
           optimal_size(optimal_size)
     {
+        set_random_seed(rnd_seed);
         build_instance(str);
         init_sol();
     }
 
+    template<typename Duration>
+    FastVC(
+        /// Graph in edge-list format
+        const std::vector<std::pair<int,int>> & edges,
+        /// Number of vertices in graph
+        const int & num_vertices,
+        /// Size of optimal vertex cover (set to 0 if not known)
+        int optimal_size,
+        /// Stop calculation after this duration (chrono duration)
+        Duration cutoff_time,
+        /// Print messages during calculation
+        bool verbose = false,
+        /// seed for random number generator
+        unsigned int rnd_seed =
+            std::chrono::high_resolution_clock::now().time_since_epoch().count())
+        : verbose(verbose),
+          cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
+          optimal_size(optimal_size)
+    {
+        set_random_seed(rnd_seed);
+        build_instance(num_vertices, edges);
+        init_sol();
+    }
+
 private:
+    void init_internal(int num_vertices, int num_edges)
+    {
+        edge.resize(num_edges);
+        uncov_stack.resize(num_edges);
+        index_in_uncov_stack.resize(num_edges);
+        dscore.resize(num_vertices);
+        time_stamp.resize(num_vertices);
+        v_degree.resize(num_vertices);
+        v_in_c.resize(num_vertices);
+        remove_cand.resize(num_vertices);
+        index_in_remove_cand.resize(num_vertices);
+        best_v_in_c.resize(num_vertices);
+    }
 
     void update_best_sol()
     {
-        for (int i=1; i<=v_num; ++i)
-            best_v_in_c[i] = v_in_c[i];
-
+        best_v_in_c = v_in_c;
         best_c_size = c_size;
         finish = std::chrono::system_clock::now();
         best_comp_time = std::chrono::duration_cast<duration_ms>(finish - start);
@@ -128,7 +173,7 @@ private:
     }
 
     template<typename Is>
-    bool build_instance(Is & str)
+    void build_instance(Is & str)
     {
         char line[1024];
         char tempstr1[10];
@@ -142,59 +187,78 @@ private:
         str.getline(line,1024);
         while (line[0] != 'p') str.getline(line,1024);
         sscanf(line, "%s %s %d %d", tempstr1, tempstr2, &v_num, &e_num);
+        init_internal(v_num, e_num);
 
-        edge.resize(e_num);              //be initialized here
-        index_in_uncov_stack.resize(e_num);             //the same as above
-        dscore.resize(v_num + 1);                       //be initialized in init_sol()
-        time_stamp.resize(v_num + 1);             //be initialized in init_sol()
-        v_degree.resize(v_num + 1);                     //the same as above
-        v_in_c.resize(v_num + 1);                      //be initialized in init_sol()
-        remove_cand.resize(v_num + 1);                  //be initialized in reset_remove_cand() in init_sol()
-        index_in_remove_cand.resize(v_num + 1);         //the same as above
-        best_v_in_c.resize(v_num + 1);                 //be initialized in update_best_sol() in init_sol()
         /* read edges and compute v_degree */
 
         for (e=0; e<e_num; ++e) {
             str>>tmp>>v1>>v2;
-            v_degree[v1]++;
-            v_degree[v2]++;
+            // start counting at zero
+            --v1;
+            --v2;
+            ++(v_degree[v1]);
+            ++(v_degree[v2]);
 
-            edge[e].v1 = v1;
-            edge[e].v2 = v2;
+            edge[e] = {v1,v2};
         }
+        update_instance_internal();
+    }
 
-        /* indices are the partial sums */
-        v_beg_idx.reserve(e_num+1);
-        v_beg_idx.push_back(0); // shift by one as partial sum calculates end_index
+    void build_instance(
+        const int & num_vertices,
+        const std::vector<std::pair<int,int>> & edges)
+    {
+      v_num = num_vertices;
+      e_num = edges.size();
+
+      init_internal(v_num, e_num);
+
+      for(unsigned int e=0; e<edges.size(); ++e){
+        ++(v_degree[edges[e].first]);
+        ++(v_degree[edges[e].second]);
+      }
+      edge = edges;
+      update_instance_internal();
+    }
+
+    /**
+     * builds internal data structures for processing this instance.
+     * has to be called after loading a new instance using
+     * build_instance
+     */
+    void update_instance_internal(){
+        // indices are the partial sums
+        // first offset is 0, last is partial including last element
+        v_beg_idx.reserve(e_num);
+        v_beg_idx.push_back(0);
         std::partial_sum(v_degree.begin(), v_degree.end(), std::back_inserter(v_beg_idx));
 
         v_edges.resize(v_beg_idx.back());
         v_adj.resize(v_beg_idx.back());
 
-        //  int v_degree_tmp[MAXV];
-        std::vector<int> v_degree_tmp(v_num + 1);
-        for (e=0; e<e_num; ++e) {
-            v1=edge[e].v1;
-            v2=edge[e].v2;
+        int v1,v2;
+        std::vector<int> v_degree_tmp(v_num);
+        for (int e=0; e<e_num; ++e) {
+            v1=edge[e].first;
+            v2=edge[e].second;
 
-            v_edges[v_beg_idx.at(v1) + v_degree_tmp[v1]] = e;
-            v_edges[v_beg_idx.at(v2) + v_degree_tmp[v2]] = e;
+            v_edges[v_beg_idx[v1] + v_degree_tmp[v1]] = e;
+            v_edges[v_beg_idx[v2] + v_degree_tmp[v2]] = e;
 
             v_adj[v_beg_idx[v1] + v_degree_tmp[v1]] = v2;
             v_adj[v_beg_idx[v2] + v_degree_tmp[v2]] = v1;
 
-            v_degree_tmp[v1]++;
-            v_degree_tmp[v2]++;
+            ++(v_degree_tmp[v1]);
+            ++(v_degree_tmp[v2]);
         }
-        return true;
     }
 
     void reset_remove_cand()
     {
         int v,j;
         j=0;
-        for (v=1; v<=v_num; ++v) {
-            if(v_in_c[v]==1) {
+        for (v=0; v<v_num; ++v) {
+            if(v_in_c[v]) {
                 remove_cand[j] = v;
                 index_in_remove_cand[v]=j;
                 ++j;
@@ -208,15 +272,11 @@ private:
     {
         --c_size;
 
-        int v,i;
-        //int best_dscore;
-        int best_remove_v;//vertex with the highest improvement in C
-
-        best_remove_v = remove_cand[0];
-        //best_dscore = dscore[best_remove_v];
+        int v;
+        int best_remove_v = remove_cand[0];
 
         if(dscore[best_remove_v]!=0) {
-            for (i=1; i<remove_cand_size; ++i) {
+            for (int i=0; i<remove_cand_size-1; ++i) {
                 v = remove_cand[i];
 
                 if(dscore[v]==0) break;
@@ -245,10 +305,11 @@ private:
     {
         int cand_count=50;
         int i,v;
-        int best_v = remove_cand[rdrand32()%remove_cand_size];
 
-        for (i=1; i<cand_count; ++i) {
-            v = remove_cand[rdrand32()%remove_cand_size];
+        int best_v = remove_cand[mt_rand()%remove_cand_size];
+
+        for (i=0; i<cand_count-1; ++i) {
+            v = remove_cand[mt_rand()%remove_cand_size];
 
             if( dscore[v] < dscore[best_v])
                 continue;
@@ -263,8 +324,8 @@ private:
 
     inline void uncover(int e)
     {
-        index_in_uncov_stack[e] = uncov_stack.size();
-        uncov_stack.push_back(e);
+        index_in_uncov_stack[e] = uncov_stack_fill_pointer;
+        uncov_stack[uncov_stack_fill_pointer++] = e;
     }
 
     inline void cover(int e)
@@ -272,12 +333,10 @@ private:
         int index,last_uncov_edge;
 
         //since the edge is satisfied, its position can be reused to store the last_uncov_edge
-        last_uncov_edge = uncov_stack.back();
-
+        last_uncov_edge = uncov_stack[--uncov_stack_fill_pointer];
         index = index_in_uncov_stack[e];
         uncov_stack[index] = last_uncov_edge;
         index_in_uncov_stack[last_uncov_edge] = index;
-        uncov_stack.pop_back();
     }
 
     void init_sol()
@@ -286,51 +345,47 @@ private:
         int v1, v2;
 
         /*** build solution data structures of the instance ***/
-
         c_size = 0;
         for (e=0; e<e_num; e++) {
-            v1=edge[e].v1;
-            v2=edge[e].v2;
+            v1=edge[e].first;
+            v2=edge[e].second;
 
-            if (v_in_c[v1]==0 && v_in_c[v2]==0) { //if uncovered, choose the endpoint with higher degree
+            if (!v_in_c[v1] && !v_in_c[v2]) { //if uncovered, choose the endpoint with higher degree
                 if(v_degree[v1] > v_degree[v2]) {
-                    v_in_c[v1]=1;
+                    v_in_c[v1]=true;
                 } else {
-                    v_in_c[v2]=1;
+                    v_in_c[v2]=true;
                 }
-                c_size++;
+                ++c_size;
             }
         }
+
+        uncov_stack_fill_pointer = 0;
 
         //calculate dscores
-        for (e=0; e<e_num; e++) {
-            v1=edge[e].v1;
-            v2=edge[e].v2;
+        for (e=0; e<e_num; ++e) {
+            v1=edge[e].first;
+            v2=edge[e].second;
 
-            if (v_in_c[v1]==1 && v_in_c[v2]==0) dscore[v1]--;
-            else if (v_in_c[v2]==1 && v_in_c[v1]==0) dscore[v2]--;
+            if (v_in_c[v1] && !v_in_c[v2]) --(dscore[v1]);
+            else if (v_in_c[v2] && !v_in_c[v1]) --(dscore[v2]);
         }
 
-
         //remove redundent vertices
-
-        for (v=1; v<=v_num; v++) {
-            if (v_in_c[v]==1 && dscore[v]==0) {
+        for (v=0; v<v_num; ++v) {
+            if (v_in_c[v] && dscore[v]==0) {
                 remove(v);
-                c_size--;
+                --c_size;
             }
         }
 
-
         update_best_sol();//initialize the best found solution
-
         reset_remove_cand();
-
     }
 
     void add(int v)
     {
-        v_in_c[v] = 1;
+        v_in_c[v] = true;
         dscore[v] = -dscore[v];
 
         int i,e,n;
@@ -338,25 +393,24 @@ private:
         int edge_count = v_degree[v];
 
         for (i=0; i<edge_count; ++i) {
-            e = v_edges[v_beg_idx[v]+i];// v's i'th edge
-            n = v_adj[v_beg_idx[v]+i];//v's i'th neighbor
+            e = v_edges[v_beg_idx[v]+i]; // v's i'th edge
+            n = v_adj[v_beg_idx[v]+i];   //v's i'th neighbor
 
-            if (v_in_c[n]==0) { //this adj isn't in cover set
-                dscore[n]--;
+            if (!v_in_c[n]) { //this adj isn't in cover set
+                --(dscore[n]);
                 //conf_change[n] = 1;
 
                 cover(e);
             } else {
-                dscore[n]++;
+                ++(dscore[n]);
             }
         }
     }
 
     void remove(int v)
     {
-        v_in_c[v] = 0;
-        dscore[v] = -dscore[v];
-        //conf_change[v] = 0;
+        v_in_c[v] = false;
+        dscore[v] *= -1;
 
         int i,e,n;
 
@@ -365,24 +419,15 @@ private:
             e = v_edges[v_beg_idx[v] + i];
             n = v_adj[v_beg_idx[v] + i];
 
-            if (v_in_c[n]==0) { //this adj isn't in cover set
-                dscore[n]++;
+            if (!v_in_c[n]) { //this adj isn't in cover set
+                ++(dscore[n]);
                 //conf_change[n] = 1;
 
                 uncover(e);
             } else {
-                dscore[n]--;
+                --(dscore[n]);
             }
         }
-    }
-
-    inline unsigned int rdrand32 ()
-    {
-        register unsigned int rand;
-        asm volatile ("rdrand %0"
-                      : "=r" (rand)
-                     );
-        return rand;
     }
 
 public:
@@ -393,7 +438,7 @@ public:
     bool check_solution()
     {
         for(int e=0; e<e_num; ++e) {
-            if(best_v_in_c[edge[e].v1]!=1 && best_v_in_c[edge[e].v2]!=1) {
+            if(!best_v_in_c[edge[e].first] && !best_v_in_c[edge[e].second]) {
                 if(verbose) {
                     std::cout<<"c error: uncovered edge "<<e<<std::endl;
                 }
@@ -402,9 +447,9 @@ public:
         }
 
         int verified_vc_size=0;
-        for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==1)
-                verified_vc_size++;
+        for (int i=0; i<v_num; ++i) {
+            if (best_v_in_c[i])
+                ++verified_vc_size;
         }
 
         if(best_c_size==verified_vc_size) return true;
@@ -440,7 +485,7 @@ public:
         start = std::chrono::system_clock::now();
 
         while(1) {
-            if (uncov_stack.size() == 0) { //update best solution if needed
+            if (uncov_stack_fill_pointer <= 0) { //update best solution if needed
                 update_best_sol();
                 if(callback_on_update != nullptr && callback_on_update(*this)) {
                     return;
@@ -463,9 +508,9 @@ public:
 
             remove(remove_v);
 
-            e = uncov_stack[rdrand32()%uncov_stack.size()];
-            v1 = edge[e].v1;
-            v2 = edge[e].v2;
+            e = uncov_stack[mt_rand()%uncov_stack_fill_pointer];
+            v1 = edge[e].first;
+            v2 = edge[e].second;
 
             if(dscore[v1]>dscore[v2] || (dscore[v1]==dscore[v2] && time_stamp[v1]<time_stamp[v2]) )
                 add_v=v1;
@@ -490,28 +535,74 @@ public:
     }
 
     /**
+     * Start solver with this initial cover, given as a list of vertex indices
+     */
+    void set_initial_cover(const std::vector<int> & cover){
+        c_size = cover.size();
+        std::fill(v_in_c.begin(), v_in_c.end(), false);
+        for(const auto v : cover){
+            v_in_c[v] = true;
+        }
+        reset_remove_cand();
+        // TODO
+    }
+
+    /**
+     * Start solver with this initial cover, given as a list of flags which
+     * denote if the vertex is in the cover
+     */
+    void set_initial_cover(const std::vector<char> & cover){
+        v_in_c = cover;
+        c_size = std::count(cover.begin(), cover.end(), true);
+    }
+
+    template<typename Duration>
+    void set_cutoff_time(Duration d){
+        cutoff_time = std::chrono::duration_cast<duration_ms>(d);
+    }
+
+    void set_optimal_size(int size){
+        optimal_size = size;
+    }
+
+    void set_random_seed(unsigned int seed){
+        mt_rand.seed(seed);
+    }
+
+    std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const
+    {
+      return std::make_pair(v_num, edge);
+    }
+
+
+    /**
      * return vertex indices of current best vertex cover
      */
-    std::vector<int> get_cover()
+    std::vector<int> get_cover(bool bias_by_one=true) const
     {
         std::vector<int> cover;
-        for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==1) {
-                cover.push_back(i);
+        for (int i=0; i<v_num; i++) {
+            if (best_v_in_c[i]) {
+                cover.push_back(i+bias_by_one);
             }
         }
         return cover;
     }
 
+    std::vector<char> get_cover_as_flaglist() const
+    {
+        return v_in_c;
+    }
+
     /**
      * return vertex indices of current best independent set
      */
-    std::vector<int> get_independent_set()
+    std::vector<int> get_independent_set(bool bias_by_one=true) const
     {
         std::vector<int> iset;
-        for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==0) {
-                iset.push_back(i);
+        for (int i=0; i<v_num; i++) {
+            if (!best_v_in_c[i]) {
+                iset.push_back(i+bias_by_one);
             }
         }
         return iset;
