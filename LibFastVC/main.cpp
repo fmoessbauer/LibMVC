@@ -40,6 +40,11 @@ int main(int argc, char* argv[])
     if(solver.check_solution())
     {
       cout<<"c Best found vertex cover size = "<<solver.get_best_cover_size()<<endl;
+
+      cout<<"c independent set:"<<endl;
+      for (auto v : solution) cout << v << ' ';
+      cout<<endl;
+
       auto solver_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_best_duration());
       auto total_time_ms  = std::chrono::duration_cast<std::chrono::milliseconds>(solver.get_total_duration());
       double performance = static_cast<double>(solver.get_best_step()) / solver_time_ms.count() / 1000.0;

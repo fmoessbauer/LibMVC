@@ -388,18 +388,6 @@ private:
 public:
 
     /**
-     * print node indices of current best vertex cover
-     */
-    void print_solution() const
-    {
-        for (int i=1; i<=v_num; i++) {
-            if (best_v_in_c[i]==1)//output vertex cover
-                std::cout<<i<<'\t';
-        }
-        std::cout<<std::endl;
-    }
-
-    /**
      * Check if the solution is valid
      */
     bool check_solution()

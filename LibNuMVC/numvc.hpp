@@ -682,33 +682,6 @@ public:
         c_size = std::count(cover.begin(), cover.end(), true);
     }
 
-    /*On solution*/
-    void print_solution()
-    {
-        int mis_vertex_count=0;
-
-        for (int i=0; i<v_num; ++i) {
-            if (!best_v_in_c[i])
-                mis_vertex_count++;
-        }
-
-        if(mis_vertex_count+best_c_size!=v_num) {
-            std::cout << "The size of independent set + the size of "
-                      << "vertex cover is not equal to |V(G)|!" << std::endl;
-        }
-
-        std::cout << "c Best found independent set size = "
-                  << mis_vertex_count << std::endl;
-        std::cout << "c The following output is the found independent set."
-                  << std::endl;
-
-        for (int i=0; i<v_num; ++i) {
-            if (!best_v_in_c[i])//output max independent set
-                std::cout << i << "  ";
-        }
-        std::cout << std::endl;
-    }
-
     //check whether the solution found is a proper solution
     bool check_solution()
     {
@@ -744,12 +717,12 @@ public:
     /**
      * return vertex indices of current best vertex cover
      */
-    std::vector<int> get_cover() const
+    std::vector<int> get_cover(bool bias_by_one=true) const
     {
         std::vector<int> cover;
         for (int i=0; i<v_num; i++) {
             if (best_v_in_c[i]) {
-                cover.push_back(i);
+                cover.push_back(i+bias_by_one);
             }
         }
         return cover;
@@ -763,12 +736,12 @@ public:
     /**
      * return vertex indices of current best independent set
      */
-    std::vector<int> get_independent_set() const
+    std::vector<int> get_independent_set(bool bias_by_one=true) const
     {
         std::vector<int> iset;
         for (int i=0; i<v_num; i++) {
             if (!best_v_in_c[i]) {
-                iset.push_back(i);
+                iset.push_back(i+bias_by_one);
             }
         }
         return iset;

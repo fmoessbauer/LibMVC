@@ -65,8 +65,14 @@ For running the benchmarks, see this example:
 
 ```bash
 # Usage: LibMVC-bench <graph> <minimal-cover> <timeout (sec)> <gbench parameters>
-./bench/LibMVC-bench ../bench/data/frb45-21-1.mis 900 100 --benchmark_repetitions=5
+./bench/LibMVC-bench data/frb45-21-mis/frb45-21-1.mis 900 100 --benchmark_repetitions=5
 ```
+
+## Indexing of Vertices
+
+The vertices of the DIMACS files are indexed starting at 1, however internally
+the the indexing starts at 0. For convenience the methods for getting the solution
+as indepentent set or cover provide a parameter to specify the indexing (default 1).
 
 ## References
 
