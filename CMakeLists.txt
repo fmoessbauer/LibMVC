@@ -26,3 +26,8 @@ if(${LIBMVC_ENABLE_TESTING})
 
   add_subdirectory(test)
 endif()
+
+message("Build Standalone Solvers")
+add_subdirectory(LibNuMVC)
+add_subdirectory(LibFastVC)
+
