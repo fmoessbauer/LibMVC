@@ -419,7 +419,7 @@ class FastVC {
   /**
    * Check if the solution is valid
    */
-  bool check_solution() {
+  bool check_solution() const {
     for (int e = 0; e < e_num; ++e) {
       if (!best_v_in_c[edge[e].first] && !best_v_in_c[edge[e].second]) {
         if (verbose) {
