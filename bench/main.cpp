@@ -76,13 +76,13 @@ int main(int argc, char** argv){
         })->Unit(benchmark::kMillisecond);
 
   benchmark::RegisterBenchmark(
-      (std::string("ParallelSolver<NuMVC>/") + config).c_str(), [&](benchmark::State & st){
-          return BM_Solver<ParallelSolver<NuMVC>>(st, filepath, coversize, time_limit);
+      (std::string("ParallelSolverAdapter<NuMVC>/") + config).c_str(), [&](benchmark::State & st){
+          return BM_Solver<ParallelSolverAdapter<NuMVC>>(st, filepath, coversize, time_limit);
         })->Unit(benchmark::kMillisecond);
 
   benchmark::RegisterBenchmark(
-      (std::string("ParallelSolver<FastVC>/") + config).c_str(), [&](benchmark::State & st){
-          return BM_Solver<ParallelSolver<FastVC>>(st, filepath, coversize, time_limit);
+      (std::string("ParallelSolverAdapter<FastVC>/") + config).c_str(), [&](benchmark::State & st){
+          return BM_Solver<ParallelSolverAdapter<FastVC>>(st, filepath, coversize, time_limit);
         })->Unit(benchmark::kMillisecond);
 
   benchmark::RunSpecifiedBenchmarks();

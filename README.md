@@ -12,6 +12,19 @@ The solvers take a graph in DIMACS format as input and calculate the
 minimal vertex cover / independent set. During the calculation, approximations
 are provided.
 
+### Parallel Solver Adapter
+
+The library includes an adapter for parallelizing any LibMVC interface
+compatible solver:
+
+```cpp
+ParallelSolverAdapter<NuMVC> solver(...);
+```
+
+The interface of the adapter itself fulfills the LibMVC interface as well.
+If not set, the adapter uses as many parallel solvers as the system provides
+CPU cores.
+
 ## Compiling
 
 All solvers are implemented as header only C++11 libraries.

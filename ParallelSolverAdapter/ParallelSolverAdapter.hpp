@@ -24,7 +24,7 @@
  * The parallel solver itself fulfills the LibMVC interface as well.
  */
 template <typename SOLVER>
-class ParallelSolver {
+class ParallelSolverAdapter {
  public:
   using Edge = std::pair<int, int>;
 
@@ -59,7 +59,7 @@ class ParallelSolver {
    * Construct solver instance by importing a graph in DIMACS format
    */
   template <typename Is, typename Duration>
-  ParallelSolver(
+  ParallelSolverAdapter(
       /// Input Stream with graph in DIMACS format
       Is &str,
       /// Size of optimal vertex cover (set to 0 if not known)
@@ -79,7 +79,7 @@ class ParallelSolver {
   }
 
   template <typename Duration>
-  ParallelSolver(
+  ParallelSolverAdapter(
       /// Graph in edge-list format
       const std::vector<std::pair<int, int>> &edges,
       /// Number of vertices in graph
@@ -102,8 +102,8 @@ class ParallelSolver {
 
   static bool monitor(
       const SOLVER &solver, bool better_cover_found, unsigned int tid,
-      ParallelSolver *self,
-      std::function<bool(const ParallelSolver &, bool)> printer) {
+      ParallelSolverAdapter *self,
+      std::function<bool(const ParallelSolverAdapter &, bool)> printer) {
     auto cover_size = self->solvers[tid].get_best_cover_size();
     auto &state = self->global_state;
 
@@ -128,8 +128,8 @@ class ParallelSolver {
   }
 
   static void start_solver(
-      ParallelSolver *self, unsigned int seed, unsigned int tid,
-      std::function<bool(const ParallelSolver &, bool)> printer) {
+      ParallelSolverAdapter *self, unsigned int seed, unsigned int tid,
+      std::function<bool(const ParallelSolverAdapter &, bool)> printer) {
     self->solvers[tid].set_random_seed(seed + tid);
     self->solvers[tid].cover_LS(std::bind(monitor, std::placeholders::_1,
                                           std::placeholders::_2, tid, self,
@@ -149,7 +149,7 @@ class ParallelSolver {
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const ParallelSolver &, bool)>
+  void cover_LS(const std::function<bool(const ParallelSolverAdapter &, bool)>
                     callback_on_update) {
     std::vector<std::thread> workers;
     solvers.resize(num_instances - 1, master);
@@ -288,7 +288,7 @@ class ParallelSolver {
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(const ParallelSolver &self,
+  static bool default_stats_printer(const ParallelSolverAdapter &self,
                                     bool better_cover_found) {
     if (better_cover_found) {
       const int best_solver_id = self.global_state.best_solver;
@@ -306,3 +306,4 @@ class ParallelSolver {
 };
 
 #endif
+

@@ -29,14 +29,14 @@ int main(int argc, char* argv[]) {
 
   std::string filename(argv[1]);
   std::ifstream file(filename, std::ios::in);
-  ParallelSolver<SOLVER> solver(file, optimal_size,
+  ParallelSolverAdapter<SOLVER> solver(file, optimal_size,
                                 std::chrono::seconds(cutoff_time), true);
 
   cout << "c Improved NuMVC Local Search Solver" << endl;
   cout << "c Using " << solver.get_concurrency() << " parallel instances"
        << std::endl;
   cout << "c Start local search..." << endl;
-  solver.cover_LS(ParallelSolver<SOLVER>::default_stats_printer);
+  solver.cover_LS(ParallelSolverAdapter<SOLVER>::default_stats_printer);
   auto solution(solver.get_independent_set());
 
   // check solution
