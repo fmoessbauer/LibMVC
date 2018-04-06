@@ -49,7 +49,8 @@ bool monitor(
     std::lock_guard<std::mutex> lock(state->mon_mx);
     state->best_cover  = cover_size;
     state->best_solver = tid;
-    std::cout << tid << ": Better MVC found.\tSize: " << solver.get_best_cover_size()
+    std::cout << std::setw(2) <<tid
+              << ": Better MVC found.\tSize: " << solver.get_best_cover_size()
               << "\tTime: " << std::fixed << std::setw(4)
               << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
   }
@@ -119,6 +120,7 @@ int main(int argc, char * argv[]){
   std::vector<SOLVER> solvers(num_solvers, master);
   SolverState global_state(master.get_vertex_count(), cover_size);
 
+  std::cout << "Using " << num_solvers << " parallel instances" << std::endl;
   // start threads
   for(unsigned int i=0; i<num_solvers; ++i){
     workers.emplace_back(start_solver, &solvers[i], base_seed, i, &global_state);
