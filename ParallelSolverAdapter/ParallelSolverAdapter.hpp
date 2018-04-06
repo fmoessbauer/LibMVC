@@ -6,39 +6,40 @@
 #define PARALLEL_SOLVER_ADAPTER_INCLUDED
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstring>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <numeric>
+#include <thread>
 #include <utility>
 #include <vector>
-#include <mutex>
-#include <atomic>
-#include <thread>
 
 /**
  * Adapter to parallelize any MVC solver compatible with the LibMVC interface.
  *
  * The parallel solver itself fulfills the LibMVC interface as well.
  */
-template<typename SOLVER>
-class ParallelSolver{
+template <typename SOLVER>
+class ParallelSolver {
  public:
   using Edge = std::pair<int, int>;
+
  private:
   using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
   using duration_ms = std::chrono::milliseconds;
 
  private:
   class SolverState {
-    public:
-      std::mutex mon_mx;
-      std::atomic<int>  best_cover{std::numeric_limits<int>::max()};
-      std::atomic<char> stop_solver{false};
-      int best_solver   = 0;
-      int optimal_cover = 0;
+   public:
+    std::mutex mon_mx;
+    std::atomic<int> best_cover{std::numeric_limits<int>::max()};
+    std::atomic<char> stop_solver{false};
+    int best_solver = 0;
+    int optimal_cover = 0;
   };
 
   bool verbose = false;
@@ -46,12 +47,12 @@ class ParallelSolver{
   /*parameters of algorithm*/
   duration_ms cutoff_time;  // time limit
 
-  SOLVER              master;
+  SOLVER master;
   std::vector<SOLVER> solvers;
-  SolverState         global_state;
+  SolverState global_state;
 
   unsigned long random_base_seed;
-  unsigned int  num_instances = std::thread::hardware_concurrency();
+  unsigned int num_instances = std::thread::hardware_concurrency();
 
  public:
   /**
@@ -73,8 +74,7 @@ class ParallelSolver{
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
         master(str, optimal_size, cutoff_time, verbose),
-        random_base_seed(rnd_seed)
-  {
+        random_base_seed(rnd_seed) {
     global_state.optimal_cover = optimal_size;
   }
 
@@ -96,31 +96,31 @@ class ParallelSolver{
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
         master(edges, num_vertices, optimal_size, cutoff_time, verbose),
-        random_base_seed(rnd_seed)
-  {
+        random_base_seed(rnd_seed) {
     global_state.optimal_cover = optimal_size;
   }
 
   static bool monitor(
-      const SOLVER & solver,
-      bool better_cover_found,
-      unsigned int tid,
-      ParallelSolver * self,
-      std::function<bool(const ParallelSolver &, bool)> printer)
-  {
+      const SOLVER &solver, bool better_cover_found, unsigned int tid,
+      ParallelSolver *self,
+      std::function<bool(const ParallelSolver &, bool)> printer) {
     auto cover_size = self->solvers[tid].get_best_cover_size();
-    auto & state = self->global_state;
+    auto &state = self->global_state;
 
     // only lock if actual change present
-    if(better_cover_found){
-      if(cover_size < state.best_cover){
+    if (better_cover_found) {
+      if (cover_size < state.best_cover) {
         std::lock_guard<std::mutex> lock(state.mon_mx);
-        state.best_cover  = cover_size;
+        state.best_cover = cover_size;
         state.best_solver = tid;
-        if(printer != nullptr){ state.stop_solver |= printer(*self, true); }
+        if (printer != nullptr) {
+          state.stop_solver |= printer(*self, true);
+        }
       }
     } else {
-      if(printer != nullptr){ state.stop_solver |= printer(*self, false); }
+      if (printer != nullptr) {
+        state.stop_solver |= printer(*self, false);
+      }
     }
     // false -> continue if best cover not found yet
     // true  -> stop calculation
@@ -128,16 +128,13 @@ class ParallelSolver{
   }
 
   static void start_solver(
-    ParallelSolver * self,
-    unsigned int seed,
-    unsigned int tid,
-    std::function<bool(const ParallelSolver &, bool)> printer)
-  {
+      ParallelSolver *self, unsigned int seed, unsigned int tid,
+      std::function<bool(const ParallelSolver &, bool)> printer) {
     self->solvers[tid].set_random_seed(seed + tid);
-    self->solvers[tid].cover_LS(
-        std::bind(monitor, std::placeholders::_1, std::placeholders::_2,
-                  tid, self, printer));
-    if(self->verbose){
+    self->solvers[tid].cover_LS(std::bind(monitor, std::placeholders::_1,
+                                          std::placeholders::_2, tid, self,
+                                          printer));
+    if (self->verbose) {
       std::cout << "-- " << tid << " terminated" << std::endl;
     }
   }
@@ -152,22 +149,25 @@ class ParallelSolver{
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const ParallelSolver &,bool)> callback_on_update) {
+  void cover_LS(const std::function<bool(const ParallelSolver &, bool)>
+                    callback_on_update) {
     std::vector<std::thread> workers;
-    solvers.resize(num_instances-1, master);
+    solvers.resize(num_instances - 1, master);
     solvers.push_back(std::move(master));
     global_state.stop_solver = false;
 
-    if(verbose){
-      std::cout << "Using " << num_instances << " parallel instances" << std::endl;
+    if (verbose) {
+      std::cout << "Using " << num_instances << " parallel instances"
+                << std::endl;
     }
 
     // start threads
-    for(unsigned int i=0; i<num_instances; ++i){
-      workers.emplace_back(start_solver, this, random_base_seed, i, callback_on_update);
+    for (unsigned int i = 0; i < num_instances; ++i) {
+      workers.emplace_back(start_solver, this, random_base_seed, i,
+                           callback_on_update);
     }
 
-    for(auto & w : workers){
+    for (auto &w : workers) {
       w.join();
     }
   }
@@ -175,9 +175,7 @@ class ParallelSolver{
   /**
    * Set the number of parallel solver instances to be started.
    */
-  void set_concurrency(unsigned int instances){
-    num_instances = instances;
-  }
+  void set_concurrency(unsigned int instances) { num_instances = instances; }
 
   /**
    * Start solver with this initial cover, given as a list of vertex indices
@@ -221,9 +219,7 @@ class ParallelSolver{
   /**
    * returns the number of parallel solvers to be started
    */
-  unsigned int get_concurrency() const {
-    return num_instances;
-  }
+  unsigned int get_concurrency() const { return num_instances; }
 
   /**
    * return vertex indices of current best vertex cover
@@ -249,16 +245,12 @@ class ParallelSolver{
   /**
    * Number of vertices
    */
-  inline int get_vertex_count() const {
-    return solvers[0].get_vertex_count();
-  }
+  inline int get_vertex_count() const { return solvers[0].get_vertex_count(); }
 
   /**
    * Number of edges
    */
-  inline int get_edge_count() const {
-    return solvers[0].get_edge_count();
-  }
+  inline int get_edge_count() const { return solvers[0].get_edge_count(); }
 
   /**
    * Size of current best vertex cover
@@ -273,9 +265,8 @@ class ParallelSolver{
    */
   inline long get_best_step() const {
     std::vector<long> all_best_steps(solvers.size());
-    std::transform(solvers.begin(), solvers.end(),
-        all_best_steps.begin(),
-        [](const auto & s){return s.get_best_step();});
+    std::transform(solvers.begin(), solvers.end(), all_best_steps.begin(),
+                   [](const auto &s) { return s.get_best_step(); });
     return std::accumulate(all_best_steps.begin(), all_best_steps.end(), 0);
   }
 
@@ -297,19 +288,18 @@ class ParallelSolver{
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(
-      const ParallelSolver & self,
-      bool better_cover_found)
-  {
-    if(better_cover_found){
+  static bool default_stats_printer(const ParallelSolver &self,
+                                    bool better_cover_found) {
+    if (better_cover_found) {
       const int best_solver_id = self.global_state.best_solver;
-      const auto & best_solver = self.solvers[best_solver_id];
+      const auto &best_solver = self.solvers[best_solver_id];
       auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
           best_solver.get_best_duration());
       std::cout << std::setw(2) << best_solver_id
-                << ": Better MVC found.\tSize: " << best_solver.get_best_cover_size()
-                << "\tTime: " << std::fixed << std::setw(4)
-                << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
+                << ": Better MVC found.\tSize: "
+                << best_solver.get_best_cover_size() << "\tTime: " << std::fixed
+                << std::setw(4) << std::setprecision(4) << time_ms.count()
+                << "ms" << std::endl;
     }
     return false;
   }
