@@ -458,7 +458,7 @@ class FastVC {
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const FastVC&)>& callback_on_update) {
+  void cover_LS(const std::function<bool(const FastVC&, bool)>& callback_on_update) {
     int remove_v, add_v;
     int e, v1, v2;
 
@@ -468,7 +468,11 @@ class FastVC {
     while (1) {
       if (uncov_stack_fill_pointer <= 0) {  // update best solution if needed
         update_best_sol();
-        if (callback_on_update != nullptr && callback_on_update(*this)) {
+        if (callback_on_update != nullptr && callback_on_update(*this, true)) {
+          return;
+        }
+        // call monitor to support external cancelling
+        if (callback_on_update != nullptr && callback_on_update(*this, false)) {
           return;
         }
         if (c_size == optimal_size) return;
@@ -619,12 +623,17 @@ class FastVC {
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(const FastVC& solver) {
-    auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        solver.get_best_duration());
-    std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
-              << "\tTime: " << std::fixed << std::setw(4)
-              << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
+  static bool default_stats_printer(
+      const FastVC &solver,
+      bool better_cover_found)
+  {
+    if(better_cover_found){
+      auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+          solver.get_best_duration());
+      std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
+                << "\tTime: " << std::fixed << std::setw(4)
+                << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
+    }
     return false;
   }
 };

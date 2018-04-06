@@ -35,13 +35,17 @@ class SolverState {
 };
 
 // acts as monitor for all solver instances
-bool monitor(const SOLVER & solver, unsigned int tid, SolverState * state){
+bool monitor(
+    const SOLVER & solver,
+    bool better_cover_found,
+    unsigned int tid, SolverState * state)
+{
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         solver.get_best_duration());
   auto cover_size = solver.get_best_cover_size();
 
   // only lock if actual change present
-  if(cover_size < state->best_cover){
+  if(better_cover_found && cover_size < state->best_cover){
     std::lock_guard<std::mutex> lock(state->mon_mx);
     state->best_cover  = cover_size;
     state->best_solver = tid;
@@ -63,7 +67,8 @@ void start_solver(
     SolverState * state)
 {
   solver->set_random_seed(seed + tid);
-  solver->cover_LS(std::bind(monitor, std::placeholders::_1, tid, state));
+  solver->cover_LS(
+      std::bind(monitor, std::placeholders::_1, std::placeholders::_2, tid, state));
   std::cout << "-- " << tid << " terminated" << std::endl;
 }
 

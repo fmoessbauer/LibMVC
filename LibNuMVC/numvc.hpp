@@ -541,7 +541,7 @@ class NuMVC {
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const NuMVC &)> &callback_on_update) {
+  void cover_LS(const std::function<bool(const NuMVC &,bool)> &callback_on_update) {
     int best_add_v;
     int e, v1, v2;
     uint64_t next_rnd;
@@ -554,7 +554,7 @@ class NuMVC {
       /* ### if there is no uncovered edge ### */
       if (uncov_stack_fill_pointer <= 0) {
         update_best_sol();  // C* := C
-        if (callback_on_update != nullptr && callback_on_update(*this)) {
+        if (callback_on_update != nullptr && callback_on_update(*this, true)) {
           return;
         }
 
@@ -570,6 +570,10 @@ class NuMVC {
         finish = std::chrono::system_clock::now();
         auto elapsed_ms =
             std::chrono::duration_cast<duration_ms>(finish - start);
+        // call monitor to support external cancelling
+        if (callback_on_update != nullptr && callback_on_update(*this, false)) {
+          return;
+        }
         if (elapsed_ms >= cutoff_time) {
           if (verbose) {
             std::cout << "Time limit reached:" << elapsed_ms.count() << "ms"
@@ -749,12 +753,17 @@ class NuMVC {
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(const NuMVC &solver) {
-    auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        solver.get_best_duration());
-    std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
-              << "\tTime: " << std::fixed << std::setw(4)
-              << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
+  static bool default_stats_printer(
+      const NuMVC &solver,
+      bool better_cover_found)
+  {
+    if(better_cover_found){
+      auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+          solver.get_best_duration());
+      std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
+                << "\tTime: " << std::fixed << std::setw(4)
+                << std::setprecision(4) << time_ms.count() << "ms" << std::endl;
+    }
     return false;
   }
 };
