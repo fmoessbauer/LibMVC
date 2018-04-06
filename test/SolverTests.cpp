@@ -1,13 +1,14 @@
 #include "gtest/gtest.h"
 #include "../LibNuMVC/numvc.hpp"
 #include "../LibFastVC/fastvc.hpp"
+#include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
 
 #include <fstream>
 
 template<typename SOLVER>
 class SolverTests : public ::testing::Test { };
 
-typedef ::testing::Types<NuMVC, FastVC> SolverTypes;
+typedef ::testing::Types<NuMVC, FastVC, ParallelSolver<NuMVC>, ParallelSolver<FastVC>> SolverTypes;
 TYPED_TEST_CASE(SolverTests, SolverTypes);
 
 TYPED_TEST(SolverTests, SimpleVC){
@@ -28,3 +29,4 @@ TYPED_TEST(SolverTests, SimpleVC){
   std::vector<int> solution(solver.get_independent_set());
   EXPECT_EQ(solution.size(), instance_size - cover_size);
 }
+

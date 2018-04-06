@@ -6,6 +6,7 @@
 
 #include "../LibNuMVC/numvc.hpp"
 #include "../LibFastVC/fastvc.hpp"
+#include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
 
 using duration_s = std::chrono::duration<std::chrono::seconds>;
 
@@ -74,6 +75,15 @@ int main(int argc, char** argv){
           return BM_Solver<FastVC>(st, filepath, coversize, time_limit);
         })->Unit(benchmark::kMillisecond);
 
+  benchmark::RegisterBenchmark(
+      (std::string("ParallelSolver<NuMVC>/") + config).c_str(), [&](benchmark::State & st){
+          return BM_Solver<ParallelSolver<NuMVC>>(st, filepath, coversize, time_limit);
+        })->Unit(benchmark::kMillisecond);
+
+  benchmark::RegisterBenchmark(
+      (std::string("ParallelSolver<FastVC>/") + config).c_str(), [&](benchmark::State & st){
+          return BM_Solver<ParallelSolver<FastVC>>(st, filepath, coversize, time_limit);
+        })->Unit(benchmark::kMillisecond);
 
   benchmark::RunSpecifiedBenchmarks();
 }

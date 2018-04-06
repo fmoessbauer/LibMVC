@@ -30,4 +30,5 @@ endif()
 message("Build Standalone Solvers")
 add_subdirectory(LibNuMVC)
 add_subdirectory(LibFastVC)
+add_subdirectory(ParallelSolverAdapter)
 

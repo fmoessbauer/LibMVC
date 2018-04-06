@@ -66,7 +66,7 @@ class NuMVC {
   /*structures about edge*/
   std::vector<Edge> edge;
   std::vector<int> edge_weight;
-  const int default_edge_weight = 1;
+  int default_edge_weight = 1;
 
   /*structures about vertex*/
   std::vector<int> dscore;  // dscore of v

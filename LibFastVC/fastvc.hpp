@@ -1,3 +1,5 @@
+#ifndef FASTVC_INCLUDED
+#define FASTVC_INCLUDED
 /************************************************
 ** This is a local search solver for Minimum Vertex Cover.
 ************************************************/
@@ -637,3 +639,5 @@ class FastVC {
     return false;
   }
 };
+#endif
+
