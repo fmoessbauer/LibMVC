@@ -47,7 +47,6 @@ class ParallelSolverAdapter {
   /*parameters of algorithm*/
   duration_ms cutoff_time;  // time limit
 
-  SOLVER master;
   std::vector<SOLVER> solvers;
   SolverState global_state;
 
@@ -73,8 +72,8 @@ class ParallelSolverAdapter {
           std::chrono::high_resolution_clock::now().time_since_epoch().count())
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-        master(str, optimal_size, cutoff_time, verbose),
         random_base_seed(rnd_seed) {
+    solvers.emplace_back(str, optimal_size, cutoff_time, verbose);
     global_state.optimal_cover = optimal_size;
   }
 
@@ -95,8 +94,8 @@ class ParallelSolverAdapter {
           std::chrono::high_resolution_clock::now().time_since_epoch().count())
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-        master(edges, num_vertices, optimal_size, cutoff_time, verbose),
         random_base_seed(rnd_seed) {
+    solvers.emplace_back(edges, num_vertices, optimal_size, cutoff_time, verbose);
     global_state.optimal_cover = optimal_size;
   }
 
@@ -152,8 +151,7 @@ class ParallelSolverAdapter {
   void cover_LS(const std::function<bool(const ParallelSolverAdapter &, bool)>
                     callback_on_update) {
     std::vector<std::thread> workers;
-    solvers.resize(num_instances - 1, master);
-    solvers.push_back(std::move(master));
+    solvers.resize(num_instances, solvers[0]);
     global_state.stop_solver = false;
 
     if (verbose) {
