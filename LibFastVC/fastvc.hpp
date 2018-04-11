@@ -477,7 +477,7 @@ class FastVC {
         if (callback_on_update != nullptr && callback_on_update(*this, false)) {
           return;
         }
-        if (c_size == optimal_size) return;
+        if (c_size <= optimal_size) return;
 
         update_target_size();
 

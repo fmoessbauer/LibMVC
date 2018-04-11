@@ -558,7 +558,7 @@ class NuMVC {
           return;
         }
 
-        if (c_size == optimal_size) return;
+        if (c_size <= optimal_size) return;
 
         update_target_size();  // remove a vertex with the highest dscore from
                                // C;
