@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.2)
 
 project(LibMVC)
 
-set(LIBMVC_ENABLE_BENCH 0 CACHE STRING "Build Benchmarks")
+set(LIBMVC_ENABLE_BENCH   0 CACHE STRING "Build Benchmarks")
 set(LIBMVC_ENABLE_TESTING 0 CACHE STRING "Build Tests")
+set(LIBMVC_ENABLE_DOCS    1 CACHE STRING "Build Documentation")
 
 if(${LIBMVC_ENABLE_BENCH})
   message("Build Benchmarks")
@@ -25,6 +26,18 @@ if(${LIBMVC_ENABLE_TESTING})
   add_subdirectory(vendor/google/googletest/googletest)
 
   add_subdirectory(test)
+endif()
+
+if(${LIBMVC_ENABLE_DOCS})
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    message("Build Documentation - build using make doc")
+    set(DOXYGEN_OUTPUT_DIRECTORY docs)
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+    doxygen_add_docs(
+      "doc"
+      README.md LibNuMVC LibFastVC ParallelSolverAdapter)
+  endif()
 endif()
 
 message("Build Standalone Solvers")

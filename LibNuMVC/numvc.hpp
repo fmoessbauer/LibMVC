@@ -33,7 +33,9 @@
 #include <utility>
 #include <vector>
 
-#include "indexed_heap.hpp"
+#include "internal/indexed_heap.hpp"
+
+namespace libmvc {
 
 class NuMVC {
  public:
@@ -44,7 +46,7 @@ class NuMVC {
   using duration_ms = std::chrono::milliseconds;
 
   using compare_t = std::function<bool(const int &, const int &)>;
-  using heap_t = Indexed_Heap<int, compare_t>;
+  using heap_t = internal::Indexed_Heap<int, compare_t>;
 
  private:
   static constexpr int try_step = 100000;
@@ -768,4 +770,7 @@ class NuMVC {
   }
 };
 
+} // namespace libmvc
+
 #endif
+

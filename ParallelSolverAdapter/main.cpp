@@ -3,15 +3,16 @@
 
 #ifdef ALGO_FAST
 #include "../LibFastVC/fastvcp.hpp"
-using SOLVER = FastVC;
+using SOLVER = libmvc::FastVC;
 #else
 #include "../LibNuMVC/numvc.hpp"
-using SOLVER = NuMVC;
+using SOLVER = libmvc::NuMVC;
 #endif
 
 #include "ParallelSolverAdapter.hpp"
 
 using namespace std;
+using namespace libmvc;
 
 int main(int argc, char* argv[]) {
   char title[1024];

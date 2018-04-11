@@ -6,6 +6,9 @@
 #include <type_traits>
 #include <vector>
 
+namespace libmvc {
+namespace internal {
+
 template <typename T, class Compare = std::less<T>>
 class Indexed_Heap {
   static_assert(std::is_integral<T>::value, "Type has to be integral type");
@@ -136,4 +139,9 @@ class Indexed_Heap {
    */
   size_type operator[](const value_type& value) const { return index[value]; }
 };
+
+} // namespace internal
+} // namespace libmvc
+
 #endif
+

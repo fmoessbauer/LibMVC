@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+namespace libmvc {
+
 /**
  * Adapter to parallelize any MVC solver compatible with the LibMVC interface.
  *
@@ -302,6 +304,8 @@ class ParallelSolverAdapter {
     return false;
   }
 };
+
+} // namepsace libmvc
 
 #endif
 

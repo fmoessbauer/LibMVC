@@ -27,6 +27,8 @@
 #include <random>
 #include <vector>
 
+namespace libmvc {
+
 /**
  * Local search solver for Minimum Vertex Cover
  */
@@ -639,5 +641,8 @@ class FastVC {
     return false;
   }
 };
+
+} // namespace libmvc
+
 #endif
 

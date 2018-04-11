@@ -3,6 +3,7 @@
 #include "numvc.hpp"
 
 using namespace std;
+using namespace libmvc;
 
 int main(int argc, char* argv[]) {
   char title[1024];

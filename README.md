@@ -27,12 +27,17 @@ CPU cores.
 
 ## Compiling
 
-All solvers are implemented as header only C++11 libraries.
+All solvers are implemented as header only C++14 libraries.
 Just incluce `<solver>/<solver>.hpp` in your project.
 Each solver is also shipped with a standalone version. To use it call
 make in the solvers folder.
 
 For building the benchmarks, see the corresponding section below.
+
+### Documentation
+
+To build the documentation for all headers using doxygen, call
+`make doc` in the build directory.
 
 ## How to use
 

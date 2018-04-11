@@ -8,6 +8,8 @@
 #include "../LibFastVC/fastvc.hpp"
 #include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
 
+using namespace libmvc;
+
 using duration_s = std::chrono::duration<std::chrono::seconds>;
 
 template<

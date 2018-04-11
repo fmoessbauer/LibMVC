@@ -6,6 +6,8 @@
 #include <fstream>
 #include <algorithm>
 
+using namespace libmvc;
+
 template<typename SOLVER>
 class SolverTests : public ::testing::Test { };
 
