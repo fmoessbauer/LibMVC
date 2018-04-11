@@ -68,7 +68,7 @@ class FastVC {
   std::vector<int> v_beg_idx;  // v_edges and v_adj is flattened 2-d array,
                                // hence store indices
   std::vector<int> v_edges;    // edges related to v, v_edges[i][k] means vertex
-                             // v_i's k_th edge
+                               // v_i's k_th edge
   std::vector<int>
       v_adj;  // v_adj[v_i][k] = v_j(actually, that is v_i's k_th neighbor)
   std::vector<int> v_degree;  // amount of edges (neighbors) related to v
@@ -462,7 +462,8 @@ class FastVC {
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const FastVC&, bool)>& callback_on_update) {
+  void cover_LS(
+      const std::function<bool(const FastVC&, bool)>& callback_on_update) {
     int remove_v, add_v;
     int e, v1, v2;
 
@@ -547,15 +548,30 @@ class FastVC {
     c_size = std::count(cover.begin(), cover.end(), true);
   }
 
+  /**
+   * set the maximum duration after which the solver terminates
+   *
+   * \param d any \c std::chrono::duration
+   */
   template <typename Duration>
   void set_cutoff_time(Duration d) {
     cutoff_time = std::chrono::duration_cast<duration_ms>(d);
   }
 
+  /**
+   * Set the size of the vertex cover at which the algorithm should stop
+   */
   void set_optimal_size(int size) { optimal_size = size; }
 
+  /**
+   * set the seed used for the pseudo random number generator
+   */
   void set_random_seed(unsigned int seed) { mt_rand.seed(seed); }
 
+  /**
+   * returns the current instance as a pair consisting of the
+   * number of vertices and a vector of edges
+   */
   std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const {
     return std::make_pair(v_num, edge);
   }
@@ -573,6 +589,10 @@ class FastVC {
     return cover;
   }
 
+  /**
+   * returns a vector of flags, where a true-flag at position i denots
+   * that vertex i is covered
+   */
   std::vector<char> get_cover_as_flaglist() const { return v_in_c; }
 
   /**
@@ -627,11 +647,9 @@ class FastVC {
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(
-      const FastVC &solver,
-      bool better_cover_found)
-  {
-    if(better_cover_found){
+  static bool default_stats_printer(const FastVC& solver,
+                                    bool better_cover_found) {
+    if (better_cover_found) {
       auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
           solver.get_best_duration());
       std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
@@ -642,7 +660,6 @@ class FastVC {
   }
 };
 
-} // namespace libmvc
+}  // namespace libmvc
 
 #endif
-

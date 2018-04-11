@@ -97,10 +97,12 @@ class ParallelSolverAdapter {
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
         random_base_seed(rnd_seed) {
-    solvers.emplace_back(edges, num_vertices, optimal_size, cutoff_time, verbose);
+    solvers.emplace_back(edges, num_vertices, optimal_size, cutoff_time,
+                         verbose);
     global_state.optimal_cover = optimal_size;
   }
 
+ private:
   static bool monitor(
       const SOLVER &solver, bool better_cover_found, unsigned int tid,
       ParallelSolverAdapter *self,
@@ -200,6 +202,11 @@ class ParallelSolverAdapter {
     return solvers[best].check_solution();
   }
 
+  /**
+   * set the maximum duration after which the solver terminates
+   *
+   * \param d any \c std::chrono::duration
+   */
   template <typename Duration>
   void set_cutoff_time(Duration d) {
     cutoff_time = std::chrono::duration_cast<duration_ms>(d);
@@ -210,8 +217,15 @@ class ParallelSolverAdapter {
    */
   void set_optimal_size(int size) { global_state.optimal_size = size; }
 
+  /**
+   * set the base-seed used for the pseudo random number generator
+   */
   void set_random_seed(unsigned int seed) { random_base_seed = seed; }
 
+  /**
+   * returns the current instance as a pair consisting of the
+   * number of vertices and a vector of edges
+   */
   std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const {
     return solvers[0].get_instance_as_edgelist();
   }
@@ -229,6 +243,10 @@ class ParallelSolverAdapter {
     return solvers[best].get_cover(bias_by_one);
   }
 
+  /**
+   * returns a vector of flags, where a true-flag at position i denots
+   * that vertex i is covered
+   */
   std::vector<char> get_cover_as_flaglist() const {
     auto best = global_state.best_solver;
     return solvers[best].get_cover_as_flaglist();
@@ -305,7 +323,6 @@ class ParallelSolverAdapter {
   }
 };
 
-} // namepsace libmvc
+}  // namespace libmvc
 
 #endif
-

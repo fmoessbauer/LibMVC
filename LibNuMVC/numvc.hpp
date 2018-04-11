@@ -543,7 +543,8 @@ class NuMVC {
    * calculate minimum vertex cover and call callback after
    * each iteration. If callback returns true, stop calculation.
    */
-  void cover_LS(const std::function<bool(const NuMVC &,bool)> &callback_on_update) {
+  void cover_LS(
+      const std::function<bool(const NuMVC &, bool)> &callback_on_update) {
     int best_add_v;
     int e, v1, v2;
     uint64_t next_rnd;
@@ -662,7 +663,9 @@ class NuMVC {
     c_size = std::count(cover.begin(), cover.end(), true);
   }
 
-  // check whether the solution found is a proper solution
+  /**
+   * Check if the calculated solution is a valid vertex cover
+   */
   bool check_solution() const {
     int e;
     for (e = 0; e < e_num; ++e) {
@@ -675,15 +678,30 @@ class NuMVC {
     return true;
   }
 
+  /**
+   * set the maximum duration after which the solver terminates
+   *
+   * \param d any \c std::chrono::duration
+   */
   template <typename Duration>
   void set_cutoff_time(Duration d) {
     cutoff_time = std::chrono::duration_cast<duration_ms>(d);
   }
 
+  /**
+   * Set the size of the vertex cover at which the algorithm should stop
+   */
   void set_optimal_size(int size) { optimal_size = size; }
 
+  /**
+   * set the seed used for the pseudo random number generator
+   */
   void set_random_seed(unsigned int seed) { mt_rand.seed(seed); }
 
+  /**
+   * returns the current instance as a pair consisting of the
+   * number of vertices and a vector of edges
+   */
   std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const {
     return std::make_pair(v_num, edge);
   }
@@ -701,6 +719,10 @@ class NuMVC {
     return cover;
   }
 
+  /**
+   * returns a vector of flags, where a true-flag at position i denots
+   * that vertex i is covered
+   */
   std::vector<char> get_cover_as_flaglist() const { return v_in_c; }
 
   /**
@@ -755,11 +777,9 @@ class NuMVC {
   /**
    * Print statistics during calculation
    */
-  static bool default_stats_printer(
-      const NuMVC &solver,
-      bool better_cover_found)
-  {
-    if(better_cover_found){
+  static bool default_stats_printer(const NuMVC &solver,
+                                    bool better_cover_found) {
+    if (better_cover_found) {
       auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
           solver.get_best_duration());
       std::cout << "Better MVC found.\tSize: " << solver.get_best_cover_size()
@@ -770,7 +790,6 @@ class NuMVC {
   }
 };
 
-} // namespace libmvc
+}  // namespace libmvc
 
 #endif
-
