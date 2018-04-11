@@ -4,6 +4,7 @@
 #include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
 
 #include <fstream>
+#include <algorithm>
 
 template<typename SOLVER>
 class SolverTests : public ::testing::Test { };
@@ -58,6 +59,32 @@ TYPED_TEST(SolverTests, EdgeListConstructor){
  }
 
 TYPED_TEST(SolverTests, InitialSolution){
+  using SOLVER=TypeParam;
 
+  int first_cover = std::max((cover_size + instance_size) / 2, cover_size);
+  std::ifstream file(filename, std::ios::in);
+  SOLVER master(file, first_cover, std::chrono::seconds(cutoff_time));
+  master.cover_LS();
+
+  // let solver check solution
+  EXPECT_EQ(master.check_solution(), true);
+
+
+  auto cover = master.get_cover_as_flaglist();
+  EXPECT_EQ(cover.size(), instance_size);
+
+  auto instance = master.get_instance_as_edgelist();
+
+  // construct new sub-solver
+  SOLVER child(instance.second, instance.first, cover_size,
+      std::chrono::seconds(cutoff_time));
+  child.set_initial_cover(cover);
+  child.cover_LS();
+
+  EXPECT_EQ(child.check_solution(), true);
+
+  // blackblox check solution
+  auto solution(child.get_independent_set());
+  EXPECT_EQ(solution.size(), instance_size - cover_size);
 }
 
