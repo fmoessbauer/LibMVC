@@ -11,12 +11,13 @@ class SolverTests : public ::testing::Test { };
 typedef ::testing::Types<NuMVC, FastVC, ParallelSolverAdapter<NuMVC>, ParallelSolverAdapter<FastVC>> SolverTypes;
 TYPED_TEST_CASE(SolverTests, SolverTypes);
 
+extern std::string filename;
+extern int cover_size;
+extern int instance_size;
+extern int cutoff_time;
+
 TYPED_TEST(SolverTests, SimpleVC){
   using SOLVER=TypeParam;
-  std::string filename("data/frb30-15-mis/frb30-15-1.mis");
-  int cutoff_time   = 10;
-  int cover_size    = 420;
-  int instance_size = 450;
 
   std::ifstream file(filename, std::ios::in);
   SOLVER solver(file, cover_size, std::chrono::seconds(cutoff_time));
@@ -28,5 +29,35 @@ TYPED_TEST(SolverTests, SimpleVC){
   // blackblox check solution
   std::vector<int> solution(solver.get_independent_set());
   EXPECT_EQ(solution.size(), instance_size - cover_size);
+}
+
+TYPED_TEST(SolverTests, EdgeListConstructor){
+  using SOLVER=TypeParam;
+  using EDGE  = std::pair<int,int>;
+  std::ifstream file(filename, std::ios::in);
+  std::pair<int, std::vector<EDGE>> edge_list;
+
+  // avoid dependencies
+  {
+    SOLVER master(file, cover_size, std::chrono::seconds(cutoff_time));
+    edge_list = master.get_instance_as_edgelist();
+    EXPECT_EQ(edge_list.first, instance_size);
+    EXPECT_GT(edge_list.second.size(), 0);
+  }
+
+  SOLVER child(edge_list.second, edge_list.first,
+      cover_size, std::chrono::seconds(cutoff_time));
+  child.cover_LS();
+
+  // let solver check solution
+  EXPECT_EQ(child.check_solution(), true);
+
+  // blackblox check solution
+  auto solution(child.get_independent_set());
+  EXPECT_EQ(solution.size(), instance_size - cover_size);
+ }
+
+TYPED_TEST(SolverTests, InitialSolution){
+
 }
 

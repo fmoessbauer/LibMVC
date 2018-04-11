@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run: git submodule update --init --recursive --remote
       - run: bash build.sh
-      - run: ./build/test/LibMVC-test
+      - run: ./build/test/LibMVC-test data/frb30-15-mis/frb30-15-1.mis 420 450 10
 
 workflows:
   version: 2
