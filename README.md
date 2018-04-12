@@ -2,14 +2,14 @@
 
 [![CircleCI](https://circleci.com/gh/fmoessbauer/LibMVC.svg?style=shield)](https://circleci.com/gh/fmoessbauer/LibMVC)
 
-LibMVC is a collection of fast iterative minimal vertex cover solvers.
+LibMVC is a collection of fast iterative minimum vertex cover solvers.
 Currently the following algorithms are implemented:
 
 - NuMVC
 - FastVC
 
 The solvers take a graph in DIMACS format as input and calculate the
-minimal vertex cover / independent set. During the calculation, approximations
+minimum vertex cover / independent set. During the calculation, approximations
 are provided.
 
 ### Parallel Solver Adapter
@@ -82,7 +82,7 @@ More and larger graphs can be downloaded using `bench/fetch_graphs.sh`.
 For running the benchmarks, see this example:
 
 ```bash
-# Usage: LibMVC-bench <graph> <minimal-cover> <timeout (sec)> <gbench parameters>
+# Usage: LibMVC-bench <graph> <minimum-cover> <timeout (sec)> <gbench parameters>
 ./bench/LibMVC-bench data/frb45-21-mis/frb45-21-1.mis 900 100 --benchmark_repetitions=5
 ```
 
