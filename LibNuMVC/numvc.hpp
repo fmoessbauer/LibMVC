@@ -207,17 +207,23 @@ class NuMVC {
    * breaking ties in favor of the oldest one;
    */
   inline void update_best_cov_v() {
-    int i, v;
-    best_cov_v = remove_cand[0];
-    for (i = 0; i < remove_cand_size - 1; ++i) {
-      v = remove_cand[i];
-      if (v == tabu_remove) continue;
-      if (dscore[v] < dscore[best_cov_v])
-        continue;
-      else if (dscore[v] > dscore[best_cov_v])
-        best_cov_v = v;
-      else if (time_stamp[v] < time_stamp[best_cov_v])
-        best_cov_v = v;
+    best_cov_v  = remove_cand[0];
+    auto dscore_best = dscore[best_cov_v];
+
+    for (int i = 0; i < remove_cand_size - 1; ++i) {
+      int v = remove_cand[i];
+      if (dscore[v] < dscore_best) continue;
+      if (dscore[v] > dscore_best){
+        if (v != tabu_remove){
+          best_cov_v  = v;
+          dscore_best = dscore[v];
+        }
+      } else if (time_stamp[v] < time_stamp[best_cov_v]){
+        if (v != tabu_remove){
+          best_cov_v = v;
+          dscore_best = dscore[v];
+        }
+      }
     }
   }
 
@@ -441,10 +447,11 @@ class NuMVC {
     int i, e, n;
 
     const int &degree = v_degree[v];
+    int idx_v = v_beg_idx[v];
 
     for (i = 0; i < degree; ++i) {
-      e = v_edges[v_beg_idx[v] + i];  // v's i'th edge
-      n = v_adj[v_beg_idx[v] + i];    // v's i'th neighbor
+      e = v_edges[idx_v + i];  // v's i'th edge
+      n = v_adj[idx_v + i];    // v's i'th neighbor
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         bool inheap = v_heap.count(n) > 0;
@@ -471,9 +478,11 @@ class NuMVC {
     int i, e, n;
 
     int edge_count = v_degree[v];
+    int idx_v = v_beg_idx[v];
+
     for (i = 0; i < edge_count; ++i) {
-      e = v_edges[v_beg_idx[v] + i];
-      n = v_adj[v_beg_idx[v] + i];
+      e = v_edges[idx_v + i];
+      n = v_adj[idx_v + i];
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         dscore[n] += edge_weight[e];
