@@ -1,5 +1,5 @@
 CXX=g++
-FILES=numvc.hpp indexed_heap.hpp main.cpp
+FILES=numvc.hpp internal/indexed_heap.hpp main.cpp
 FLAGS=-std=c++14 -Wall
 
 # OpenMP support is experimental and might be slower (enable using -fopenmp)
