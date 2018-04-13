@@ -195,7 +195,7 @@ class NuMVC {
     conf_change.resize(num_vertices, 1);
   }
 
-  void update_best_sol() {
+  inline void update_best_sol() {
     best_v_in_c = v_in_c;
     best_c_size = c_size;
     finish = std::chrono::system_clock::now();
@@ -206,7 +206,7 @@ class NuMVC {
   /** choose a vertex u in C with the highest dscore,
    * breaking ties in favor of the oldest one;
    */
-  void update_best_cov_v() {
+  inline void update_best_cov_v() {
     int i, v;
     best_cov_v = remove_cand[0];
     for (i = 0; i < remove_cand_size - 1; ++i) {
@@ -298,7 +298,7 @@ class NuMVC {
     }
   }
 
-  void reset_remove_cand() {
+  inline void reset_remove_cand() {
     int v, j;
     j = 0;
     for (v = 0; v < v_num; ++v) {

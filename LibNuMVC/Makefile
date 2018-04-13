@@ -7,7 +7,7 @@ numvc: $(FILES)
 	$(CXX) main.cpp -O3 -Ofast $(FLAGS) -o numvc
 
 prof: $(FILES)
-	$(CXX) main.cpp -g -O2 -pg -no-pie $(FLAGS) -o numvc
+	$(CXX) main.cpp -g -O2 -pg -no-pie -fno-omit-frame-pointer $(FLAGS) -o numvc
 
 
 debug: $(FILES)
