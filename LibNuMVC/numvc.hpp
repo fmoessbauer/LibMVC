@@ -417,10 +417,11 @@ class NuMVC {
     int i, e, n;
 
     int edge_count = v_degree[v];
+    int idx_v = v_beg_idx[v];
 
     for (i = 0; i < edge_count; ++i) {
-      e = v_edges[v_beg_idx[v] + i];  // v's i'th edge
-      n = v_adj[v_beg_idx[v] + i];    // v's i'th neighbor
+      e = v_edges[idx_v+i];  // v's i'th edge
+      n = v_adj[idx_v+i];    // v's i'th neighbor
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         dscore[n] -= edge_weight[e];
