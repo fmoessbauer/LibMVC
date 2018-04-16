@@ -42,6 +42,9 @@ class NuMVC {
   using Edge = std::pair<int, int>;
 
  private:
+  // weighted Edge
+  using WEdge = std::tuple<int, int, int>;
+
   using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
   using duration_ms = std::chrono::milliseconds;
 
@@ -66,8 +69,7 @@ class NuMVC {
   int e_num;  //|E|: 0...e-1
 
   /*structures about edge*/
-  std::vector<Edge> edge;
-  std::vector<int> edge_weight;
+  std::vector<WEdge> edge;
   int default_edge_weight = 1;
 
   /*structures about vertex*/
@@ -82,7 +84,6 @@ class NuMVC {
                                // v_i's k_th edge
   std::vector<int>
       v_adj;  // v_adj[v_i][k] = v_j (actually, that is v_i's k_th neighbor)
-  std::vector<int> v_degree;  // amount of edges (neighbors) related to v
 
   /* structures about solution */
   // current candidate solution
@@ -106,7 +107,6 @@ class NuMVC {
   int uncov_stack_fill_pointer;
   std::vector<int>
       index_in_uncov_stack;  // which position is an edge in the uncov_stack
-  std::vector<int> v_degree_tmp;
 
   // CC and taboo, pack densly to avoid cache misses
   std::vector<bool> conf_change;
@@ -170,14 +170,17 @@ class NuMVC {
   }
 
  private:
+
+  int degree(int v) const {
+    return v_beg_idx[v+1] - v_beg_idx[v];
+  }
+
   void init_internal(int num_vertices, int num_edges) {
     threshold = static_cast<int>(0.5 * num_vertices);
 
     edge.resize(num_edges);
-    edge_weight.resize(num_edges, default_edge_weight);
     dscore.resize(num_vertices);
     time_stamp.resize(num_vertices);
-    v_degree.resize(num_vertices);
 
     v_in_c.resize(num_vertices);
     remove_cand.resize(num_vertices);
@@ -189,7 +192,6 @@ class NuMVC {
     uncov_stack.resize(num_edges);  // store the uncov edge number
     index_in_uncov_stack.resize(
         num_edges);  // which position is an edge in the uncov_stack
-    v_degree_tmp.resize(num_vertices);
 
     // CC and taboo
     conf_change.resize(num_vertices, 1);
@@ -242,6 +244,7 @@ class NuMVC {
     while (line[0] != 'p') str.getline(line, 1024);
     sscanf(line, "%s %s %d %d", tempstr1, tempstr2, &v_num, &e_num);
     init_internal(v_num, e_num);
+    std::vector<int> v_degree(v_num);
 
     for (e = 0; e < e_num; ++e) {
       str >> tmp >> v1 >> v2;
@@ -251,24 +254,27 @@ class NuMVC {
       ++(v_degree[v1]);
       ++(v_degree[v2]);
 
-      edge[e] = {v1, v2};
+      edge[e] = {v1, v2, default_edge_weight};
     }
-    update_instance_internal();
+    update_instance_internal(v_degree);
   }
 
   void build_instance(const int &num_vertices,
                       const std::vector<std::pair<int, int>> &edges) {
     v_num = num_vertices;
     e_num = edges.size();
+    std::vector<int> v_degree(v_num);
 
     init_internal(v_num, e_num);
 
     for (unsigned int e = 0; e < edges.size(); ++e) {
-      ++(v_degree[edges[e].first]);
-      ++(v_degree[edges[e].second]);
+      int a,b;
+      std::tie(a,b) = edges[e];
+      edge[e] = std::tuple<int, int, int>(a,b,default_edge_weight);
+      ++(v_degree[a]);
+      ++(v_degree[b]);
     }
-    edge = edges;
-    update_instance_internal();
+    update_instance_internal(v_degree);
   }
 
   /**
@@ -276,7 +282,7 @@ class NuMVC {
    * has to be called after loading a new instance using
    * build_instance
    */
-  void update_instance_internal() {
+  void update_instance_internal(const std::vector<int> & v_degree) {
     // indices are the partial sums
     // first offset is 0, last is partial including last element
     v_beg_idx.reserve(e_num);
@@ -290,8 +296,7 @@ class NuMVC {
     int v1, v2;
     std::vector<int> v_degree_tmp(v_num);
     for (int e = 0; e < e_num; ++e) {
-      v1 = edge[e].first;
-      v2 = edge[e].second;
+      std::tie(v1,v2,std::ignore) = edge[e];
 
       v_edges[v_beg_idx[v1] + v_degree_tmp[v1]] = e;
       v_edges[v_beg_idx[v2] + v_degree_tmp[v2]] = e;
@@ -367,9 +372,10 @@ class NuMVC {
     // init vertex cover
     // conf_change = 1 (already set in resize call)
     for (int e = 0; e < e_num; ++e) {
-      const auto weight = edge_weight[e];
-      dscore[edge[e].first] += weight;
-      dscore[edge[e].second] += weight;
+      int a,b,weight;
+      std::tie(a, b, weight) = edge[e];
+      dscore[a] += weight;
+      dscore[b] += weight;
     }
 
       // init uncovered edge stack and cover_vertrex_count_of_edge array
@@ -422,20 +428,19 @@ class NuMVC {
 
     int i, e, n;
 
-    int edge_count = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < edge_count; ++i) {
+    for (i = 0; i < degree(v); ++i) {
       e = v_edges[idx_v+i];  // v's i'th edge
       n = v_adj[idx_v+i];    // v's i'th neighbor
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
-        dscore[n] -= edge_weight[e];
+        dscore[n] -= std::get<2>(edge[e]);
         conf_change[n] = 1;
 
         cover(e);
       } else {
-        dscore[n] += edge_weight[e];
+        dscore[n] += std::get<2>(edge[e]);
       }
     }
   }
@@ -446,10 +451,9 @@ class NuMVC {
 
     int i, e, n;
 
-    const int &degree = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < degree; ++i) {
+    for (i = 0; i < degree(v); ++i) {
       e = v_edges[idx_v + i];  // v's i'th edge
       n = v_adj[idx_v + i];    // v's i'th neighbor
 
@@ -458,14 +462,14 @@ class NuMVC {
         if (inheap) {
           v_heap.erase(v_heap[n]);
         }
-        dscore[n] -= edge_weight[e];
+        dscore[n] -= std::get<2>(edge[e]);
         conf_change[n] = 1;
         if (inheap) {
           v_heap.push(n);
         }
         cover(e);
       } else {
-        dscore[n] += edge_weight[e];
+        dscore[n] += std::get<2>(edge[e]);
       }
     }
   }
@@ -477,20 +481,19 @@ class NuMVC {
 
     int i, e, n;
 
-    int edge_count = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < edge_count; ++i) {
+    for (i = 0; i < degree(v); ++i) {
       e = v_edges[idx_v + i];
       n = v_adj[idx_v + i];
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
-        dscore[n] += edge_weight[e];
+        dscore[n] += std::get<2>(edge[e]);
         conf_change[n] = 1;
 
         uncover(e);
       } else {
-        dscore[n] -= edge_weight[e];
+        dscore[n] -= std::get<2>(edge[e]);
       }
     }
   }
@@ -503,19 +506,21 @@ class NuMVC {
 
     // scale_ave=ave_weight*q_scale;
     for (e = 0; e < e_num; e++) {
-      edge_weight[e] = edge_weight[e] * p_scale;
+      int a,b,weight;
+      std::tie(a,b,weight) = edge[e];
+      std::get<2>(edge[e]) *= p_scale;
 
-      new_total_weight += edge_weight[e];
+      new_total_weight += weight;
 
       // update dscore
-      if (!(v_in_c[edge[e].first] || v_in_c[edge[e].second])) {
-        dscore[edge[e].first] += edge_weight[e];
-        dscore[edge[e].second] += edge_weight[e];
-      } else if (v_in_c[edge[e].first] != v_in_c[edge[e].second]) {
-        if (v_in_c[edge[e].first])
-          dscore[edge[e].first] -= edge_weight[e];
+      if (!(v_in_c[a] || v_in_c[b])) {
+        dscore[a] += weight;
+        dscore[b] += weight;
+      } else if (v_in_c[a] != v_in_c[b]) {
+        if (v_in_c[a])
+          dscore[a] -= weight;
         else
-          dscore[edge[e].second] -= edge_weight[e];
+          dscore[b] -= weight;
       }
     }
     ave_weight = new_total_weight / e_num;
@@ -524,11 +529,12 @@ class NuMVC {
   void update_edge_weight() {
     int i, e;
     for (i = 0; i < uncov_stack_fill_pointer; ++i) {
+      int a,b;
       e = uncov_stack[i];
-
-      edge_weight[e] += 1;
-      dscore[edge[e].first] += 1;
-      dscore[edge[e].second] += 1;
+      std::tie(a,b,std::ignore) = edge[e];
+      std::get<2>(edge[e]) += 1;
+      dscore[a] += 1;
+      dscore[b] += 1;
     }
 
     delta_total_weight += uncov_stack_fill_pointer;
@@ -611,8 +617,7 @@ class NuMVC {
 
       /* choose a vertex v in e such that confChange(v) = 1 with higher dscore,
         breaking ties in favor of the older one; */
-      v1 = edge[e].first;
-      v2 = edge[e].second;
+      std::tie(v1,v2,std::ignore) = edge[e];
 
       if (conf_change[v1] == 0)
         best_add_v = v2;
@@ -679,7 +684,9 @@ class NuMVC {
   bool check_solution() const {
     int e;
     for (e = 0; e < e_num; ++e) {
-      if (!(best_v_in_c[edge[e].first] || best_v_in_c[edge[e].second])) {
+      int a,b;
+      std::tie(a,b,std::ignore) = edge[e];
+      if (!(best_v_in_c[a] || best_v_in_c[b])) {
         std::cout << "uncovered edge " << e << std::endl;
         return false;
       }
@@ -713,7 +720,14 @@ class NuMVC {
    * number of vertices and a vector of edges
    */
   std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const {
-    return std::make_pair(v_num, edge);
+    int a,b;
+    std::vector<Edge> copy_edge;
+    copy_edge.reserve(edge.size());
+    for(const auto & e : edge){
+      std::tie(a,b,std::ignore) = e;
+      copy_edge.emplace_back(a,b);
+    }
+    return std::make_pair(v_num, copy_edge);
   }
 
   /**
