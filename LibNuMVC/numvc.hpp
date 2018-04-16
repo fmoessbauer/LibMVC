@@ -108,8 +108,8 @@ class NuMVC {
       index_in_uncov_stack;  // which position is an edge in the uncov_stack
   std::vector<int> v_degree_tmp;
 
-  // CC and taboo
-  std::vector<int> conf_change;
+  // CC and taboo, pack densly to avoid cache misses
+  std::vector<bool> conf_change;
   int tabu_remove = 0;
 
   // smooth
