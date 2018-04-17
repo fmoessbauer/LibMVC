@@ -303,9 +303,8 @@ class NuMVC {
   }
 
   inline void reset_remove_cand() {
-    int v, j;
-    j = 0;
-    for (v = 0; v < v_num; ++v) {
+    int j = 0;
+    for (int v = 0; v < v_num; ++v) {
       if (v_in_c[v]) {  // && v!=tabu_remove)
         remove_cand[j] = v;
         index_in_remove_cand[v] = j;
@@ -313,7 +312,6 @@ class NuMVC {
       } else
         index_in_remove_cand[v] = 0;
     }
-
     remove_cand_size = j;
   }
 
@@ -342,12 +340,10 @@ class NuMVC {
   }
 
   inline void cover(int e) {
-    int index, last_uncov_edge;
-
     // since the edge is satisfied, its position can be reused to store the
     // last_uncov_edge
-    last_uncov_edge = uncov_stack[--uncov_stack_fill_pointer];
-    index = index_in_uncov_stack[e];
+    int last_uncov_edge = uncov_stack[--uncov_stack_fill_pointer];
+    int index = index_in_uncov_stack[e];
     uncov_stack[index] = last_uncov_edge;
     index_in_uncov_stack[last_uncov_edge] = index;
   }
@@ -418,14 +414,12 @@ class NuMVC {
     v_in_c[v] = true;
     dscore[v] *= -1;
 
-    int i, e, n;
-
     int edge_count = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < edge_count; ++i) {
-      e = v_edges[idx_v+i];  // v's i'th edge
-      n = v_adj[idx_v+i];    // v's i'th neighbor
+    for (int i = 0; i < edge_count; ++i) {
+      int e = v_edges[idx_v+i];  // v's i'th edge
+      int n = v_adj[idx_v+i];    // v's i'th neighbor
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         dscore[n] -= edge_weight[e];
@@ -440,16 +434,14 @@ class NuMVC {
 
   void add_init(int v, heap_t &v_heap) {
     v_in_c[v] = true;
-    dscore[v] *= (-1);
-
-    int i, e, n;
+    dscore[v] *= -1;
 
     const int &degree = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < degree; ++i) {
-      e = v_edges[idx_v + i];  // v's i'th edge
-      n = v_adj[idx_v + i];    // v's i'th neighbor
+    for (int i = 0; i < degree; ++i) {
+      int e = v_edges[idx_v + i];  // v's i'th edge
+      int n = v_adj[idx_v + i];    // v's i'th neighbor
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         bool inheap = v_heap.count(n) > 0;
@@ -473,14 +465,12 @@ class NuMVC {
     dscore[v] *= -1;
     conf_change[v] = 0;
 
-    int i, e, n;
-
     int edge_count = v_degree[v];
     int idx_v = v_beg_idx[v];
 
-    for (i = 0; i < edge_count; ++i) {
-      e = v_edges[idx_v + i];
-      n = v_adj[idx_v + i];
+    for (int i = 0; i < edge_count; ++i) {
+      int e = v_edges[idx_v + i];
+      int n = v_adj[idx_v + i];
 
       if (!v_in_c[n]) {  // this adj isn't in cover set
         dscore[n] += edge_weight[e];
@@ -494,13 +484,12 @@ class NuMVC {
   }
 
   void forget_edge_weights() {
-    int v, e;
     int new_total_weight = 0;
 
-    for (v = 0; v < v_num; ++v) dscore[v] = 0;
+    std::fill(dscore.begin(), dscore.end(), 0);
 
     // scale_ave=ave_weight*q_scale;
-    for (e = 0; e < e_num; e++) {
+    for (int e = 0; e < e_num; ++e) {
       edge_weight[e] = edge_weight[e] * p_scale;
 
       new_total_weight += edge_weight[e];
@@ -520,9 +509,8 @@ class NuMVC {
   }
 
   void update_edge_weight() {
-    int i, e;
-    for (i = 0; i < uncov_stack_fill_pointer; ++i) {
-      e = uncov_stack[i];
+    for (int i = 0; i < uncov_stack_fill_pointer; ++i) {
+      int e = uncov_stack[i];
 
       edge_weight[e] += 1;
       dscore[edge[e].first] += 1;
@@ -553,9 +541,6 @@ class NuMVC {
    */
   void cover_LS(
       const std::function<bool(const NuMVC &, bool)> &callback_on_update) {
-    int best_add_v;
-    int e, v1, v2;
-    uint64_t next_rnd;
 
     // initialize random pool
     step = 1;
@@ -604,13 +589,14 @@ class NuMVC {
 
       /* choose an uncovered edge e randomly; */
 
-      next_rnd = mt_rand();
-      e = uncov_stack[next_rnd % uncov_stack_fill_pointer];
+      auto next_rnd = mt_rand();
+      int e = uncov_stack[next_rnd % uncov_stack_fill_pointer];
 
       /* choose a vertex v in e such that confChange(v) = 1 with higher dscore,
         breaking ties in favor of the older one; */
-      v1 = edge[e].first;
-      v2 = edge[e].second;
+      int v1 = edge[e].first;
+      int v2 = edge[e].second;
+      int best_add_v;
 
       if (conf_change[v1] == 0)
         best_add_v = v2;
