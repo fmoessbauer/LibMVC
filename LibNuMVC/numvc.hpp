@@ -106,7 +106,6 @@ class NuMVC {
   int uncov_stack_fill_pointer;
   std::vector<int>
       index_in_uncov_stack;  // which position is an edge in the uncov_stack
-  std::vector<int> v_degree_tmp;
 
   // CC and taboo, pack densly to avoid cache misses
   std::vector<bool> conf_change;
@@ -189,7 +188,6 @@ class NuMVC {
     uncov_stack.resize(num_edges);  // store the uncov edge number
     index_in_uncov_stack.resize(
         num_edges);  // which position is an edge in the uncov_stack
-    v_degree_tmp.resize(num_vertices);
 
     // CC and taboo
     conf_change.resize(num_vertices, 1);
