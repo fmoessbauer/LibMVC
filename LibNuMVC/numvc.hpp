@@ -82,7 +82,6 @@ class NuMVC {
                                // v_i's k_th edge
   std::vector<int>
       v_adj;  // v_adj[v_i][k] = v_j (actually, that is v_i's k_th neighbor)
-  std::vector<int> v_degree;  // amount of edges (neighbors) related to v
 
   /* structures about solution */
   // current candidate solution
@@ -176,7 +175,6 @@ class NuMVC {
     edge_weight.resize(num_edges, default_edge_weight);
     dscore.resize(num_vertices);
     time_stamp.resize(num_vertices);
-    v_degree.resize(num_vertices);
 
     v_in_c.resize(num_vertices);
     remove_cand.resize(num_vertices);
@@ -191,6 +189,10 @@ class NuMVC {
 
     // CC and taboo
     conf_change.resize(num_vertices, 1);
+  }
+
+  inline int degree(int v) const {
+    return v_beg_idx[v+1] - v_beg_idx[v];
   }
 
   inline void update_best_sol() {
@@ -241,6 +243,7 @@ class NuMVC {
     sscanf(line, "%s %s %d %d", tempstr1, tempstr2, &v_num, &e_num);
     init_internal(v_num, e_num);
 
+    std::vector<int> v_degree(v_num);
     for (e = 0; e < e_num; ++e) {
       str >> tmp >> v1 >> v2;
       // start counting at zero
@@ -251,7 +254,7 @@ class NuMVC {
 
       edge[e] = {v1, v2};
     }
-    update_instance_internal();
+    update_instance_internal(v_degree);
   }
 
   void build_instance(const int &num_vertices,
@@ -261,12 +264,13 @@ class NuMVC {
 
     init_internal(v_num, e_num);
 
+    std::vector<int> v_degree(v_num);
     for (unsigned int e = 0; e < edges.size(); ++e) {
       ++(v_degree[edges[e].first]);
       ++(v_degree[edges[e].second]);
     }
     edge = edges;
-    update_instance_internal();
+    update_instance_internal(v_degree);
   }
 
   /**
@@ -274,7 +278,7 @@ class NuMVC {
    * has to be called after loading a new instance using
    * build_instance
    */
-  void update_instance_internal() {
+  void update_instance_internal(const std::vector<int> & v_degree) {
     // indices are the partial sums
     // first offset is 0, last is partial including last element
     v_beg_idx.reserve(e_num);
@@ -414,7 +418,7 @@ class NuMVC {
     v_in_c[v] = true;
     dscore[v] *= -1;
 
-    int edge_count = v_degree[v];
+    int edge_count = degree(v);
     int idx_v = v_beg_idx[v];
 
     for (int i = 0; i < edge_count; ++i) {
@@ -436,10 +440,10 @@ class NuMVC {
     v_in_c[v] = true;
     dscore[v] *= -1;
 
-    const int &degree = v_degree[v];
+    int edge_count = degree(v);
     int idx_v = v_beg_idx[v];
 
-    for (int i = 0; i < degree; ++i) {
+    for (int i = 0; i < edge_count; ++i) {
       int e = v_edges[idx_v + i];  // v's i'th edge
       int n = v_adj[idx_v + i];    // v's i'th neighbor
 
@@ -465,7 +469,7 @@ class NuMVC {
     dscore[v] *= -1;
     conf_change[v] = 0;
 
-    int edge_count = v_degree[v];
+    int edge_count = degree(v);
     int idx_v = v_beg_idx[v];
 
     for (int i = 0; i < edge_count; ++i) {
