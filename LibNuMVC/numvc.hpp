@@ -114,7 +114,6 @@ class NuMVC {
   static constexpr float p_scale = 0.3;  // w=w*p
   int delta_total_weight = 0;
   int ave_weight = 1;
-  int threshold;
 
   // random
   std::mt19937 mt_rand;
@@ -169,8 +168,6 @@ class NuMVC {
 
  private:
   void init_internal(int num_vertices, int num_edges) {
-    threshold = static_cast<int>(0.5 * num_vertices);
-
     edge.resize(num_edges);
     edge_weight.resize(num_edges, default_edge_weight);
     dscore.resize(num_vertices);
@@ -528,6 +525,7 @@ class NuMVC {
     }
 
     // smooth weights
+    int threshold = v_num / 2;
     if (ave_weight >= threshold) {
       forget_edge_weights();
     }
