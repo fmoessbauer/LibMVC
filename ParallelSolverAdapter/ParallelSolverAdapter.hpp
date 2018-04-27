@@ -180,21 +180,6 @@ class ParallelSolverAdapter {
   void set_concurrency(unsigned int instances) { num_instances = instances; }
 
   /**
-   * Start solver with this initial cover, given as a list of vertex indices
-   */
-  void set_initial_cover(const std::vector<int> &cover) {
-    solvers[0].set_initial_cover(cover);
-  }
-
-  /**
-   * Start solver with this initial cover, given as a list of flags which
-   * denote if the vertex is in the cover
-   */
-  void set_initial_cover(const std::vector<char> &cover) {
-    solvers[0].set_initial_cover(cover);
-  }
-
-  /**
    * Check if the calculated solution is a valid vertex cover
    */
   bool check_solution() const {
@@ -215,7 +200,7 @@ class ParallelSolverAdapter {
   /**
    * Set the size of the vertex cover at which the algorithm should stop
    */
-  void set_optimal_size(int size) { global_state.optimal_size = size; }
+  void set_optimal_size(int size) { global_state.optimal_cover = size; }
 
   /**
    * set the base-seed used for the pseudo random number generator

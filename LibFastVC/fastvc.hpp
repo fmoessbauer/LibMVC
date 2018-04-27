@@ -464,8 +464,7 @@ class FastVC {
    */
   void cover_LS(
       const std::function<bool(const FastVC&, bool)>& callback_on_update) {
-    int remove_v, add_v;
-    int e, v1, v2;
+    int add_v;
 
     step = 1;
     start = std::chrono::system_clock::now();
@@ -489,18 +488,28 @@ class FastVC {
 
       if (step % try_step == 0) {  // check cutoff
         finish = std::chrono::system_clock::now();
-        auto elap_time = finish - start;
-        if (elap_time >= cutoff_time) return;
+        auto elapsed_ms = std::chrono::duration_cast<duration_ms>(finish - start);
+        // call monitor to support external cancelling
+        if (callback_on_update != nullptr && callback_on_update(*this, false)) {
+          return;
+        }
+        if (elapsed_ms >= cutoff_time) {
+          if (verbose) {
+            std::cout << "Time limit reached:" << elapsed_ms.count() << "ms"
+                      << std::endl;
+          }
+          return;
+        }
       }
 
-      remove_v = choose_remove_v();
+      int remove_v = choose_remove_v();
       // remove_dscore = dscore[remove_v];
 
       remove(remove_v);
 
-      e = uncov_stack[mt_rand() % uncov_stack_fill_pointer];
-      v1 = edge[e].first;
-      v2 = edge[e].second;
+      int e  = uncov_stack[mt_rand() % uncov_stack_fill_pointer];
+      int v1 = edge[e].first;
+      int v2 = edge[e].second;
 
       if (dscore[v1] > dscore[v2] ||
           (dscore[v1] == dscore[v2] && time_stamp[v1] < time_stamp[v2]))
@@ -524,28 +533,7 @@ class FastVC {
 
       ++step;
     }
-  }
-
-  /**
-   * Start solver with this initial cover, given as a list of vertex indices
-   */
-  void set_initial_cover(const std::vector<int>& cover) {
-    c_size = cover.size();
-    std::fill(v_in_c.begin(), v_in_c.end(), false);
-    for (const auto v : cover) {
-      v_in_c[v] = true;
-    }
-    reset_remove_cand();
-    // TODO
-  }
-
-  /**
-   * Start solver with this initial cover, given as a list of flags which
-   * denote if the vertex is in the cover
-   */
-  void set_initial_cover(const std::vector<char>& cover) {
-    v_in_c = cover;
-    c_size = std::count(cover.begin(), cover.end(), true);
+    return;
   }
 
   /**

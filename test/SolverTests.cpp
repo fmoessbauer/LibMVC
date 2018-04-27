@@ -80,7 +80,6 @@ TYPED_TEST(SolverTests, InitialSolution){
   // construct new sub-solver
   SOLVER child(instance.second, instance.first, cover_size,
       std::chrono::seconds(cutoff_time));
-  child.set_initial_cover(cover);
   child.cover_LS();
 
   EXPECT_EQ(child.check_solution(), true);

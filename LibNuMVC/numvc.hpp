@@ -638,28 +638,6 @@ class NuMVC {
   }
 
   /**
-   * Start solver with this initial cover, given as a list of vertex indices
-   */
-  void set_initial_cover(const std::vector<int> &cover) {
-    c_size = cover.size();
-    std::fill(v_in_c.begin(), v_in_c.end(), false);
-    for (const auto v : cover) {
-      v_in_c[v] = true;
-    }
-    reset_remove_cand();
-    update_best_cov_v();
-  }
-
-  /**
-   * Start solver with this initial cover, given as a list of flags which
-   * denote if the vertex is in the cover
-   */
-  void set_initial_cover(const std::vector<char> &cover) {
-    v_in_c = cover;
-    c_size = std::count(cover.begin(), cover.end(), true);
-  }
-
-  /**
    * Check if the calculated solution is a valid vertex cover
    */
   bool check_solution() const {
