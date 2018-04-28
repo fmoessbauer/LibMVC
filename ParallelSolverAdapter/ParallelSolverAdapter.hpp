@@ -120,16 +120,18 @@ class ParallelSolverAdapter {
         }
         if (printer != nullptr && printer(*self, true)) {
           state.stop_solver = true;
+          return true;
         }
       }
     } else {
       if (printer != nullptr && printer(*self, false)) {
         state.stop_solver = true;
+        return true;
       }
     }
     // false -> continue if best cover not found yet
     // true  -> stop calculation
-    return ((state.best_cover == state.optimal_cover) || state.stop_solver);
+    return (state.best_cover == state.optimal_cover);
   }
 
   static void start_solver(
