@@ -39,7 +39,7 @@ class ParallelSolverAdapter {
    public:
     std::mutex mon_mx;
     std::atomic<int> best_cover{std::numeric_limits<int>::max()};
-    std::atomic<char> stop_solver{false};
+    std::atomic<bool> stop_solver{false};
     int best_solver = 0;
     int optimal_cover = 0;
   };
@@ -113,16 +113,18 @@ class ParallelSolverAdapter {
     // only lock if actual change present
     if (better_cover_found) {
       if (cover_size < state.best_cover) {
-        std::lock_guard<std::mutex> lock(state.mon_mx);
-        state.best_cover = cover_size;
-        state.best_solver = tid;
-        if (printer != nullptr) {
-          state.stop_solver |= printer(*self, true);
+        {
+          std::lock_guard<std::mutex> lock(state.mon_mx);
+          state.best_cover = cover_size;
+          state.best_solver = tid;
+        }
+        if (printer != nullptr && printer(*self, true)) {
+          state.stop_solver = true;
         }
       }
     } else {
-      if (printer != nullptr) {
-        state.stop_solver |= printer(*self, false);
+      if (printer != nullptr && printer(*self, false)) {
+        state.stop_solver = true;
       }
     }
     // false -> continue if best cover not found yet
