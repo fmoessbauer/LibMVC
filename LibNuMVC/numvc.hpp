@@ -697,7 +697,7 @@ class NuMVC {
    * returns a vector of flags, where a true-flag at position i denots
    * that vertex i is covered
    */
-  std::vector<char> get_cover_as_flaglist() const { return v_in_c; }
+  std::vector<char> get_cover_as_flaglist() const { return best_v_in_c; }
 
   /**
    * return vertex indices of current best independent set

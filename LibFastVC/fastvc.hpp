@@ -329,12 +329,11 @@ class FastVC {
   }
 
   void init_sol() {
-    int v, e;
     int v1, v2;
 
     /*** build solution data structures of the instance ***/
     c_size = 0;
-    for (e = 0; e < e_num; e++) {
+    for (int e = 0; e < e_num; ++e) {
       v1 = edge[e].first;
       v2 = edge[e].second;
 
@@ -352,7 +351,7 @@ class FastVC {
     uncov_stack_fill_pointer = 0;
 
     // calculate dscores
-    for (e = 0; e < e_num; ++e) {
+    for (int e = 0; e < e_num; ++e) {
       v1 = edge[e].first;
       v2 = edge[e].second;
 
@@ -363,7 +362,7 @@ class FastVC {
     }
 
     // remove redundent vertices
-    for (v = 0; v < v_num; ++v) {
+    for (int v = 0; v < v_num; ++v) {
       if (v_in_c[v] && dscore[v] == 0) {
         remove(v);
         --c_size;
@@ -581,7 +580,7 @@ class FastVC {
    * returns a vector of flags, where a true-flag at position i denots
    * that vertex i is covered
    */
-  std::vector<char> get_cover_as_flaglist() const { return v_in_c; }
+  std::vector<char> get_cover_as_flaglist() const { return best_v_in_c; }
 
   /**
    * return vertex indices of current best independent set

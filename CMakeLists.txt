@@ -2,9 +2,16 @@ cmake_minimum_required(VERSION 3.2)
 
 project(LibMVC)
 
-set(LIBMVC_ENABLE_BENCH   0 CACHE STRING "Build Benchmarks")
-set(LIBMVC_ENABLE_TESTING 0 CACHE STRING "Build Tests")
-set(LIBMVC_ENABLE_DOCS    1 CACHE STRING "Build Documentation")
+set(LIBMVC_ENABLE_BENCH    0 CACHE STRING "Build Benchmarks")
+set(LIBMVC_ENABLE_TESTING  0 CACHE STRING "Build Tests")
+set(LIBMVC_ENABLE_COVERAGE 0 CACHE STRING "Build Coverage-Tests")
+set(LIBMVC_ENABLE_DOCS     1 CACHE STRING "Build Documentation")
+
+# load coverage scripts if build type is Coverage
+if(${LIBMVC_ENABLE_COVERAGE})
+  include(vendor/cmake-modules/CodeCoverage.cmake)
+  append_coverage_compiler_flags()
+endif()
 
 if(${LIBMVC_ENABLE_BENCH})
   message("Build Benchmarks")
