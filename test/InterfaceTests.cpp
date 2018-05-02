@@ -98,3 +98,17 @@ TYPED_TEST(InterfaceTests, GetterSetter){
   EXPECT_GE(total_dur.count(), best_dur.count());
 }
 
+// Execute verbose-only code lines, useful for coverage
+TYPED_TEST(InterfaceTests, VerboseOutput){
+  using SOLVER=TypeParam;
+
+  std::ifstream file(filename, std::ios::in);
+  SOLVER solver(
+      file,
+      cover_size,
+      std::chrono::seconds(cutoff_time),
+      true);
+
+  solver.cover_LS(SOLVER::default_stats_printer);
+}
+
