@@ -94,7 +94,7 @@ TYPED_TEST(InterfaceTests, GetterSetter){
 
   std::chrono::milliseconds best_dur  = solver.get_best_duration();
   std::chrono::milliseconds total_dur = solver.get_total_duration();
-  EXPECT_GT(best_dur.count(), 0);
+  EXPECT_GE(best_dur.count(), 0);
   EXPECT_GE(total_dur.count(), best_dur.count());
 }
 
