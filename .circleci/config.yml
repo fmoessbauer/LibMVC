@@ -21,6 +21,17 @@ jobs:
       - store_artifacts:
           path: build.cov/LibMVC-test-coverage.xml
           prefix: coverage
+  meson:
+    docker:
+      - image: ubuntu:latest
+    steps:
+      - run: apt update && apt install git build-essential ninja-build meson -y
+      - checkout
+      - run: git submodule update --init --recursive --remote
+      - run: meson build
+      - run: cd build && ninja
+      - store_artifacts:
+          path: build/meson-logs
 
 workflows:
   version: 2
@@ -28,4 +39,5 @@ workflows:
     jobs:
       - build_gcc
       - coverage
+      - meson
 
