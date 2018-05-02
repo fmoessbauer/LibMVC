@@ -31,10 +31,13 @@ gbench_dep = declare_dependency(dependencies : dependency('threads'),
 #openmp  = dependency('openmp')
 threads = dependency('threads')
 
-executable(
+libmvcbench = executable(
   'LibMVC-bench',
   'main.cpp',
   cpp_args: '-fopenmp',
   link_args: '-fopenmp',
   dependencies: [threads, gbench_dep])
+
+benchmark('reg-bench', libmvcbench,
+  args: ['../data/frb45-21-mis/frb45-21-1.mis', '900', '10'])
 
