@@ -7,18 +7,19 @@ jobs:
       - checkout
       - run: git submodule update --init --recursive --remote
       - run: bash build.sh
-      - run: ./build/test/LibMVC-test data/frb30-15-mis/frb30-15-1.mis 420 450 5
+      - run: ./build/test/LibMVC-test data/frb30-15-mis/frb30-15-1.mis 420 450 10
   coverage:
     docker:
       - image: thoughton/gcc-cmake:latest
     steps:
-      - run: apt update && apt install lcov -y
+      - run: apt update && apt install lcov gcovr -y
       - checkout
       - run: git submodule update --init --recursive --remote
       - run: bash build.cov.sh
       - run: cd build.cov && make LibMVC-test-coverage
+      - run: bash <(curl -s https://codecov.io/bash)
       - store_artifacts:
-          path: build.cov/LibMVC-test-coverage
+          path: build.cov/LibMVC-test-coverage.xml
           prefix: coverage
 
 workflows:

@@ -1,0 +1,4 @@
+ignore:
+  - "Lib.*/main.cpp$"
+  - "ParallelSolverAdapter/main.cpp$"
+
