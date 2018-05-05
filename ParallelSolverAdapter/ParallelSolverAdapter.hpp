@@ -17,6 +17,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <memory>
 
 namespace libmvc {
 
@@ -37,6 +38,8 @@ class ParallelSolverAdapter {
  private:
   class SolverState {
    public:
+    explicit SolverState(int opt_size){ optimal_cover = opt_size; }
+
     std::mutex mon_mx;
     std::atomic<int> best_cover{std::numeric_limits<int>::max()};
     std::atomic<bool> stop_solver{false};
@@ -45,15 +48,17 @@ class ParallelSolverAdapter {
   };
 
   bool verbose = false;
-
-  /*parameters of algorithm*/
-  duration_ms cutoff_time;  // time limit
-
-  std::vector<SOLVER> solvers;
+  // time limit
+  duration_ms cutoff_time;
+  // invariant master solver
+  SOLVER master;
+  // dynamic local solvers
+  std::vector<std::unique_ptr<SOLVER>> solvers;
+  // state object to coodinate solving
   SolverState global_state;
 
   unsigned long random_base_seed;
-  unsigned int num_instances = std::thread::hardware_concurrency();
+  unsigned int  num_instances = std::thread::hardware_concurrency();
 
  public:
   /**
@@ -74,10 +79,9 @@ class ParallelSolverAdapter {
           std::chrono::high_resolution_clock::now().time_since_epoch().count())
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-        random_base_seed(rnd_seed) {
-    solvers.emplace_back(str, optimal_size, cutoff_time, verbose);
-    global_state.optimal_cover = optimal_size;
-  }
+        master(str, optimal_size, cutoff_time, verbose),
+        global_state(optimal_size),
+        random_base_seed(rnd_seed) { }
 
   template <typename Duration>
   ParallelSolverAdapter(
@@ -96,18 +100,16 @@ class ParallelSolverAdapter {
           std::chrono::high_resolution_clock::now().time_since_epoch().count())
       : verbose(verbose),
         cutoff_time(std::chrono::duration_cast<duration_ms>(cutoff_time)),
-        random_base_seed(rnd_seed) {
-    solvers.emplace_back(edges, num_vertices, optimal_size, cutoff_time,
-                         verbose);
-    global_state.optimal_cover = optimal_size;
-  }
+        master(edges, num_vertices, optimal_size, cutoff_time),
+        global_state(optimal_size),
+        random_base_seed(rnd_seed) { }
 
  private:
   static bool monitor(
       const SOLVER &solver, bool better_cover_found, unsigned int tid,
       ParallelSolverAdapter *self,
       std::function<bool(const ParallelSolverAdapter &, bool)> printer) {
-    auto cover_size = self->solvers[tid].get_best_cover_size();
+    auto cover_size = self->solvers[tid]->get_best_cover_size();
     auto &state = self->global_state;
 
     // only lock if actual change present
@@ -137,8 +139,10 @@ class ParallelSolverAdapter {
   static void start_solver(
       ParallelSolverAdapter *self, unsigned int seed, unsigned int tid,
       std::function<bool(const ParallelSolverAdapter &, bool)> printer) {
-    self->solvers[tid].set_random_seed(seed + tid);
-    self->solvers[tid].cover_LS(std::bind(monitor, std::placeholders::_1,
+    // copy master solver to local memory (first touch policy)
+    self->solvers[tid] = std::make_unique<SOLVER>(self->master);
+    self->solvers[tid]->set_random_seed(seed + tid);
+    self->solvers[tid]->cover_LS(std::bind(monitor, std::placeholders::_1,
                                           std::placeholders::_2, tid, self,
                                           printer));
     if (self->verbose) {
@@ -159,7 +163,7 @@ class ParallelSolverAdapter {
   void cover_LS(const std::function<bool(const ParallelSolverAdapter &, bool)>
                     callback_on_update) {
     std::vector<std::thread> workers;
-    solvers.resize(num_instances, solvers[0]);
+    solvers.resize(num_instances);
     global_state.stop_solver = false;
 
     if (verbose) {
@@ -168,10 +172,11 @@ class ParallelSolverAdapter {
     }
 
     // start threads
-    for (unsigned int i = 0; i < num_instances; ++i) {
+    for (unsigned int i = 1; i < num_instances; ++i) {
       workers.emplace_back(start_solver, this, random_base_seed, i,
                            callback_on_update);
     }
+    start_solver(this, random_base_seed, 0, callback_on_update);
 
     for (auto &w : workers) {
       w.join();
@@ -188,7 +193,7 @@ class ParallelSolverAdapter {
    */
   bool check_solution() const {
     auto best = global_state.best_solver;
-    return solvers[best].check_solution();
+    return solvers[best]->check_solution();
   }
 
   /**
@@ -216,7 +221,7 @@ class ParallelSolverAdapter {
    * number of vertices and a vector of edges
    */
   std::pair<int, std::vector<Edge>> get_instance_as_edgelist() const {
-    return solvers[0].get_instance_as_edgelist();
+    return master.get_instance_as_edgelist();
   }
 
   /**
@@ -229,7 +234,7 @@ class ParallelSolverAdapter {
    */
   std::vector<int> get_cover(bool bias_by_one = true) const {
     auto best = global_state.best_solver;
-    return solvers[best].get_cover(bias_by_one);
+    return solvers[best]->get_cover(bias_by_one);
   }
 
   /**
@@ -238,7 +243,7 @@ class ParallelSolverAdapter {
    */
   std::vector<char> get_cover_as_flaglist() const {
     auto best = global_state.best_solver;
-    return solvers[best].get_cover_as_flaglist();
+    return solvers[best]->get_cover_as_flaglist();
   }
 
   /**
@@ -246,25 +251,25 @@ class ParallelSolverAdapter {
    */
   std::vector<int> get_independent_set(bool bias_by_one = true) const {
     auto best = global_state.best_solver;
-    return solvers[best].get_independent_set();
+    return solvers[best]->get_independent_set();
   }
 
   /**
    * Number of vertices
    */
-  inline int get_vertex_count() const { return solvers[0].get_vertex_count(); }
+  inline int get_vertex_count() const { return master.get_vertex_count(); }
 
   /**
    * Number of edges
    */
-  inline int get_edge_count() const { return solvers[0].get_edge_count(); }
+  inline int get_edge_count() const { return master.get_edge_count(); }
 
   /**
    * Size of current best vertex cover
    */
   inline int get_best_cover_size() const {
     auto best = global_state.best_solver;
-    return solvers[best].get_best_cover_size();
+    return solvers[best]->get_best_cover_size();
   }
 
   /**
@@ -273,7 +278,7 @@ class ParallelSolverAdapter {
   inline long get_best_step() const {
     std::vector<long> all_best_steps(solvers.size());
     std::transform(solvers.begin(), solvers.end(), all_best_steps.begin(),
-                   [](const auto &s) { return s.get_best_step(); });
+                   [](const auto &s) { return s->get_best_step(); });
     return std::accumulate(all_best_steps.begin(), all_best_steps.end(), 0);
   }
 
@@ -282,14 +287,14 @@ class ParallelSolverAdapter {
    */
   inline std::chrono::milliseconds get_best_duration() const {
     auto best = global_state.best_solver;
-    return solvers[best].get_best_duration();
+    return solvers[best]->get_best_duration();
   }
 
   /**
    * total duration since start of calculation
    */
   inline std::chrono::milliseconds get_total_duration() const {
-    return solvers[0].get_total_duration();
+    return master.get_total_duration();
   }
 
   /**
@@ -299,7 +304,7 @@ class ParallelSolverAdapter {
                                     bool better_cover_found) {
     if (better_cover_found) {
       const int best_solver_id = self.global_state.best_solver;
-      const auto &best_solver = self.solvers[best_solver_id];
+      const auto &best_solver = *(self.solvers[best_solver_id]);
       auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
           best_solver.get_best_duration());
       std::cout << std::setw(2) << best_solver_id
