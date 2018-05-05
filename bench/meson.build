@@ -21,7 +21,9 @@ libgbench = static_library('gbench',
     join_paths(gbench_srcdir, 'string_util.cc'),
     join_paths(gbench_srcdir, 'sysinfo.cc'),
     join_paths(gbench_srcdir, 'timers.cc')
-  ]
+  ],
+  override_options : 'cpp_std=c++11',
+  cpp_args : get_option('buildtype') == 'release' ? ['-DNDEBUG'] : []
 )
 gbench_dep = declare_dependency(dependencies : dependency('threads'),
   include_directories : gbench_incdir,
