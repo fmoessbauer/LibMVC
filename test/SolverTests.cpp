@@ -31,7 +31,8 @@ TYPED_TEST(SolverTests, SimpleVC){
 
   // blackblox check solution
   std::vector<int> solution(solver.get_independent_set());
-  EXPECT_EQ(solution.size(), instance_size - cover_size);
+  unsigned int expected = instance_size - cover_size;
+  EXPECT_EQ(solution.size(), expected);
 }
 
 TYPED_TEST(SolverTests, EdgeListConstructor){
@@ -45,7 +46,7 @@ TYPED_TEST(SolverTests, EdgeListConstructor){
     SOLVER master(file, cover_size, std::chrono::seconds(cutoff_time));
     edge_list = master.get_instance_as_edgelist();
     EXPECT_EQ(edge_list.first, instance_size);
-    EXPECT_GT(edge_list.second.size(), 0);
+    EXPECT_GT(edge_list.second.size(), 0u);
   }
 
   SOLVER child(edge_list.second, edge_list.first,
@@ -57,7 +58,8 @@ TYPED_TEST(SolverTests, EdgeListConstructor){
 
   // blackblox check solution
   auto solution(child.get_independent_set());
-  EXPECT_EQ(solution.size(), instance_size - cover_size);
+  unsigned int expected = instance_size - cover_size;
+  EXPECT_EQ(solution.size(), expected);
  }
 
 TYPED_TEST(SolverTests, InitialSolution){
@@ -73,7 +75,7 @@ TYPED_TEST(SolverTests, InitialSolution){
 
 
   auto cover = master.get_cover_as_flaglist();
-  EXPECT_EQ(cover.size(), instance_size);
+  EXPECT_EQ(cover.size(), static_cast<unsigned int>(instance_size));
 
   auto instance = master.get_instance_as_edgelist();
 
@@ -86,6 +88,7 @@ TYPED_TEST(SolverTests, InitialSolution){
 
   // blackblox check solution
   auto solution(child.get_independent_set());
-  EXPECT_EQ(solution.size(), instance_size - cover_size);
+  unsigned int expected = instance_size - cover_size;
+  EXPECT_EQ(solution.size(), expected);
 }
 

@@ -72,9 +72,9 @@ TYPED_TEST(InterfaceTests, GetterSetter){
   std::vector<int> cover(std::move(solver.get_cover()));
 
   // check equality
-  int num_true_flags = std::count(flaglist.begin(), flaglist.end(), true);
+  unsigned int num_true_flags = std::count(flaglist.begin(), flaglist.end(), true);
   EXPECT_EQ(num_true_flags, cover.size());
-  EXPECT_EQ(solver.get_best_cover_size(), cover.size());
+  EXPECT_EQ(solver.get_best_cover_size(), static_cast<int>(cover.size()));
 
   // Is are all vertices which are not in cover
   std::vector<int> ind_set(std::move(solver.get_independent_set()));
@@ -86,8 +86,8 @@ TYPED_TEST(InterfaceTests, GetterSetter){
   int edge_count    = solver.get_edge_count();
 
   EXPECT_EQ(vertex_count, instance_size);
-  EXPECT_EQ(vertex_count, flaglist.size());
-  EXPECT_EQ(edge_count, edgelist.second.size());
+  EXPECT_EQ(vertex_count, static_cast<int>(flaglist.size()));
+  EXPECT_EQ(edge_count, static_cast<int>(edgelist.second.size()));
 
   long best_step = solver.get_best_step();
   EXPECT_GT(best_step, 1);
