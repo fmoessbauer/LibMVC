@@ -1,35 +1,28 @@
 version: 2
 jobs:
-  build_gcc:
-    docker:
-      - image: thoughton/gcc-cmake:latest
-    steps:
-      - checkout
-      - run: git submodule update --init --recursive --remote
-      - run: bash build.sh
-      - run: ./build/test/LibMVC-test data/frb30-15-mis/frb30-15-1.mis 420 450 10
   coverage:
     docker:
-      - image: thoughton/gcc-cmake:latest
+      - image: ubuntu:latest
     steps:
-      - run: apt update && apt install lcov gcovr -y
+      - run: apt update && apt install git build-essential ninja-build meson lcov gcovr -y
       - checkout
-      - run: git submodule update --init --recursive --remote
       - run: bash build.cov.sh
-      - run: cd build.cov && make LibMVC-test-coverage
+      - run: cd build.cov && ninja test && ninja coverage-xml
       - run: bash <(curl -s https://codecov.io/bash)
       - store_artifacts:
-          path: build.cov/LibMVC-test-coverage.xml
+          path: build.cov/build.cov/meson-logs/coverage.xml
           prefix: coverage
+      - store_artifacts:
+          path: build/meson-logs
+
   meson:
     docker:
       - image: ubuntu:latest
     steps:
       - run: apt update && apt install git build-essential ninja-build meson -y
       - checkout
-      - run: git submodule update --init --recursive --remote
       - run: meson build
-      - run: cd build && ninja
+      - run: cd build && ninja test
       - store_artifacts:
           path: build/meson-logs
 
@@ -37,7 +30,6 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - build_gcc
       - coverage
       - meson
 

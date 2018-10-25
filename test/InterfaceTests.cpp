@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "../LibNuMVC/numvc.hpp"
-#include "../LibFastVC/fastvc.hpp"
-#include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
+#include "numvc.hpp"
+#include "fastvc.hpp"
+#include "parallelsolveradapter.hpp"
 
 #include <algorithm>
 #include <fstream>

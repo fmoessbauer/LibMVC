@@ -1,0 +1,8 @@
+PROJECT_NAME           = "LibMVC"
+PROJECT_NUMBER         = @VERSION@
+OUTPUT_DIRECTORY       = doc
+TAB_SIZE               = 2
+MARKDOWN_SUPPORT       = YES
+INPUT                  = "@TOP_SRCDIR@/README.md" "@TOP_SRCDIR@/LibMVC"
+INCLUDE_PATH           = "@TOP_SRCDIR@/LibMVC" "@TOP_BUILDDIR@/LibMVC"
+USE_MDFILE_AS_MAINPAGE = README.md
