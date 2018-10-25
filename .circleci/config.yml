@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: ubuntu:latest
     steps:
-      - run: apt update && apt install git build-essential ninja-build meson lcov gcovr -y
+      - run: apt update && apt install git curl build-essential ninja-build meson lcov gcovr -y
       - checkout
       - run: bash build.cov.sh
       - run: cd build.cov && ninja test && ninja coverage-xml

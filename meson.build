@@ -23,6 +23,7 @@ endif
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(
   name: 'libmvc',
+  version: meson.project_version(),
   filebase: 'libmvc',
   description: 'LibMVC is a collection of fast iterative minimum vertex cover solvers')
 
