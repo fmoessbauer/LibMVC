@@ -25,6 +25,12 @@ int main(int argc, char* argv[]) {
   int optimal_size;
   int cutoff_time;
 
+  if(argc != 4){
+    std::cout << "Usage: <filename> <optimal_size|0> <cutoff_time[s]>"
+              << std::endl;
+    exit(1);
+  }
+
   sscanf(argv[2], "%d", &optimal_size);  // if you want to stop the algorithm
                                          // only cutoff time is reached, set
                                          // optimal_size to 0.

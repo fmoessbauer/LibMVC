@@ -23,7 +23,7 @@ jobs:
     steps:
       - run: apt update && apt install git build-essential ninja-build meson -y
       - checkout
-      - run: meson build
+      - run: meson build --warnlevel 3 --werror
       - run: cd build && ninja
       - run: cd build && ninja test
       - store_artifacts:
@@ -35,7 +35,7 @@ jobs:
     steps:
       - run: apt update && apt install git clang-6.0 ninja-build meson -y
       - checkout
-      - run: CXX=clang++-6.0 meson build
+      - run: CXX=clang++-6.0 meson build --warnlevel 3 --werror
       - run: cd build && ninja
       - run: cd build && ninja test
       - store_artifacts:
