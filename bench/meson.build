@@ -17,6 +17,6 @@ libmvcbench = executable(
   link_args: '-fopenmp',
   dependencies: [threads, gbench_dep])
 
-benchmark('reg-bench', libmvcbench,
+benchmark('reg-bench', libmvcbench, timeout: 60,
   args: ['../data/frb45-21-mis/frb45-21-1.mis', '900', '10'])
 

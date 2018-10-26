@@ -7,6 +7,10 @@ project('LibMVC', 'cpp',
 
 inc = include_directories('LibMVC')
 install_subdir('LibMVC', install_dir: 'include')
+# install tiny graph for testing
+install_subdir(
+  'data/frb30-15-mis',
+  install_dir: 'data')
 
 subdir('standalone')
 subdir('test')
