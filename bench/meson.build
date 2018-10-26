@@ -1,33 +1,9 @@
-# create google benchmark dependency
-gbench_dir    = '../vendor/google/benchmark'
-gbench_incdir = include_directories(join_paths(gbench_dir, 'include'))
-gbench_srcdir = join_paths(gbench_dir, 'src')
+gbench_dep = dependency('benchmark', required: false)
 
-libgbench = static_library('gbench',
-  include_directories : [include_directories(gbench_dir), gbench_incdir],
-  sources : [
-    join_paths(gbench_srcdir, 'benchmark.cc'),
-    join_paths(gbench_srcdir, 'benchmark_register.cc'),
-    join_paths(gbench_srcdir, 'colorprint.cc'),
-    join_paths(gbench_srcdir, 'commandlineflags.cc'),
-    join_paths(gbench_srcdir, 'complexity.cc'),
-    join_paths(gbench_srcdir, 'console_reporter.cc'),
-    join_paths(gbench_srcdir, 'counter.cc'),
-    join_paths(gbench_srcdir, 'csv_reporter.cc'),
-    join_paths(gbench_srcdir, 'json_reporter.cc'),
-    join_paths(gbench_srcdir, 'reporter.cc'),
-    join_paths(gbench_srcdir, 'sleep.cc'),
-    join_paths(gbench_srcdir, 'statistics.cc'),
-    join_paths(gbench_srcdir, 'string_util.cc'),
-    join_paths(gbench_srcdir, 'sysinfo.cc'),
-    join_paths(gbench_srcdir, 'timers.cc')
-  ],
-  override_options : 'cpp_std=c++11',
-  cpp_args : get_option('buildtype') == 'release' ? ['-DNDEBUG'] : []
-)
-gbench_dep = declare_dependency(dependencies : dependency('threads'),
-  include_directories : gbench_incdir,
-  link_with : libgbench)
+if not gbench_dep.found()
+  gbench_proj = subproject('benchmark')
+  gbench_dep  = gbench_proj.get_variable('gbenchmark_dep')
+endif
 
 # currently not supported
 #openmp  = dependency('openmp')
@@ -36,10 +12,11 @@ threads = dependency('threads')
 libmvcbench = executable(
   'LibMVC-bench',
   'main.cpp',
+  include_directories: inc,
   cpp_args: '-fopenmp',
   link_args: '-fopenmp',
   dependencies: [threads, gbench_dep])
 
-benchmark('reg-bench', libmvcbench,
+benchmark('reg-bench', libmvcbench, timeout: 60,
   args: ['../data/frb45-21-mis/frb45-21-1.mis', '900', '10'])
 

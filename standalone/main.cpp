@@ -1,24 +1,35 @@
 #include <chrono>
 #include <fstream>
 
-#ifdef ALGO_FAST
-#include "../LibFastVC/fastvcp.hpp"
-using SOLVER = libmvc::FastVC;
-#else
-#include "../LibNuMVC/numvc.hpp"
-using SOLVER = libmvc::NuMVC;
-#endif
+#include "numvc.hpp"
+#include "fastvc.hpp"
+#include "parallelsolveradapter.hpp"
 
-#include "ParallelSolverAdapter.hpp"
+// use -DSOLVER to specify a solver
+#ifndef SOLVER
+#define SOLVER=NuMVC
+#endif
 
 using namespace std;
 using namespace libmvc;
+
+#ifdef PARALLEL
+using _SOLVR = ParallelSolverAdapter<SOLVER>;
+#else
+using _SOLVR = SOLVER;
+#endif
 
 int main(int argc, char* argv[]) {
   char title[1024];
 
   int optimal_size;
   int cutoff_time;
+
+  if(argc != 4){
+    std::cout << "Usage: <filename> <optimal_size|0> <cutoff_time[s]>"
+              << std::endl;
+    exit(1);
+  }
 
   sscanf(argv[2], "%d", &optimal_size);  // if you want to stop the algorithm
                                          // only cutoff time is reached, set
@@ -30,14 +41,12 @@ int main(int argc, char* argv[]) {
 
   std::string filename(argv[1]);
   std::ifstream file(filename, std::ios::in);
-  ParallelSolverAdapter<SOLVER> solver(file, optimal_size,
-                                std::chrono::seconds(cutoff_time), true);
+  _SOLVR solver(file, optimal_size, std::chrono::seconds(cutoff_time), true);
 
   cout << "c Improved NuMVC Local Search Solver" << endl;
-  cout << "c Using " << solver.get_concurrency() << " parallel instances"
-       << std::endl;
+
   cout << "c Start local search..." << endl;
-  solver.cover_LS(ParallelSolverAdapter<SOLVER>::default_stats_printer);
+  solver.cover_LS(_SOLVR::default_stats_printer);
   auto solution(solver.get_independent_set());
 
   // check solution

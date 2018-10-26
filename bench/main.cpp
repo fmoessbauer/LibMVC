@@ -4,9 +4,9 @@
 #include <fstream>
 #include <chrono>
 
-#include "../LibNuMVC/numvc.hpp"
-#include "../LibFastVC/fastvc.hpp"
-#include "../ParallelSolverAdapter/ParallelSolverAdapter.hpp"
+#include "numvc.hpp"
+#include "fastvc.hpp"
+#include "parallelsolveradapter.hpp"
 
 using namespace libmvc;
 

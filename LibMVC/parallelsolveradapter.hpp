@@ -106,11 +106,15 @@ class ParallelSolverAdapter {
 
  private:
   static bool monitor(
-      const SOLVER &solver, bool better_cover_found, unsigned int tid,
+      const SOLVER & /* solver */,
+      bool better_cover_found,
+      unsigned int tid,
       ParallelSolverAdapter *self,
-      std::function<bool(const ParallelSolverAdapter &, bool)> printer) {
+      std::function<bool(const ParallelSolverAdapter &, bool)> printer)
+  {
     auto cover_size = self->solvers[tid]->get_best_cover_size();
     auto &state = self->global_state;
+
 
     // only lock if actual change present
     if (better_cover_found) {
@@ -251,7 +255,7 @@ class ParallelSolverAdapter {
    */
   std::vector<int> get_independent_set(bool bias_by_one = true) const {
     auto best = global_state.best_solver;
-    return solvers[best]->get_independent_set();
+    return solvers[best]->get_independent_set(bias_by_one);
   }
 
   /**
