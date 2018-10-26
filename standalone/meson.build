@@ -7,7 +7,9 @@ executable(
   s + '-standalone',
   'main.cpp',
   cpp_args : '-DSOLVER=' + s,
-  include_directories: inc)
+  include_directories: inc,
+  install: true,
+  install_dir: 'bin')
 endforeach
 
 # parallel versions
@@ -17,6 +19,8 @@ executable(
   'main.cpp',
   cpp_args : ['-DSOLVER=' + s, '-DPARALLEL'],
   include_directories: inc,
+  install: true,
+  install_dir: 'bin',
   dependencies: threads_dep)
 endforeach
 

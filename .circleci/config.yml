@@ -23,10 +23,16 @@ jobs:
     steps:
       - run: apt update && apt install git build-essential ninja-build meson -y
       - checkout
-      - run: meson build --warnlevel 3 --werror
+      - run: meson build --warnlevel 3 --werror --prefix=/opt/libmvc
       - run: cd build && ninja
       - run: cd build && ninja test
       - run: cd build && ninja benchmark
+      # install and run standalone solvers
+      - run: cd build && ninja install
+      - run: /opt/libmvc/bin/NuMVC-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+      - run: /opt/libmvc/bin/FastVC-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+      - run: /opt/libmvc/bin/NuMVC-parallel-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+      - run: /opt/libmvc/bin/FastVC-parallel-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
       - store_artifacts:
           path: build/meson-logs
 
