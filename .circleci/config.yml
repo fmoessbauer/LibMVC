@@ -6,7 +6,7 @@ jobs:
     steps:
       - run: apt update && apt install git curl build-essential ninja-build meson lcov gcovr -y
       - checkout
-      - run: bash build.cov.sh
+      - run: meson -Db_coverage=true build.cov
       - run: cd build.cov && ninja
       - run: cd build.cov && ninja test
       - run: cd build.cov && ninja coverage-xml
