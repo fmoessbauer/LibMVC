@@ -26,6 +26,7 @@ jobs:
       - run: meson build --warnlevel 3 --werror
       - run: cd build && ninja
       - run: cd build && ninja test
+      - run: cd build && ninja benchmark
       - store_artifacts:
           path: build/meson-logs
 
@@ -38,6 +39,7 @@ jobs:
       - run: CXX=clang++-6.0 meson build --warnlevel 3 --werror
       - run: cd build && ninja
       - run: cd build && ninja test
+      - run: cd build && ninja benchmark
       - store_artifacts:
           path: build/meson-logs
 

@@ -30,8 +30,12 @@ CPU cores.
 
 All solvers are implemented as header only C++14 libraries.
 Just incluce `<solver>/<solver>.hpp` in your project.
+The tests and benchmarks are build using meson. You can also install LibMVC
+with meson. If you use meson for your project, you can pull in this project
+using a wrap.
+
 Each solver is also shipped with a standalone version. To use it call
-make in the solvers folder.
+make in the standalone folder (or use meson).
 
 For building the benchmarks, see the corresponding section below.
 
@@ -74,7 +78,6 @@ std::vector<int> solution = std::move(solver.get_independent_set());
 ## Benchmarks
 
 Benchmarks are provided for all solvers, using the google benchmark library.
-The library is included as a git submodule, hence clone using `git clone --recursive`.
 To simplify building and also as a good starting point, the `build.sh` script can be used.
 
 To keep the repository small, only a small sample graph is included in `bench/data`.
