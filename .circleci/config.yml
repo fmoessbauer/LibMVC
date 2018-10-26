@@ -7,21 +7,36 @@ jobs:
       - run: apt update && apt install git curl build-essential ninja-build meson lcov gcovr -y
       - checkout
       - run: bash build.cov.sh
-      - run: cd build.cov && ninja test && ninja coverage-xml
+      - run: cd build.cov && ninja
+      - run: cd build.cov && ninja test
+      - run: cd build.cov && ninja coverage-xml
       - run: bash <(curl -s https://codecov.io/bash)
       - store_artifacts:
           path: build.cov/build.cov/meson-logs/coverage.xml
           prefix: coverage
       - store_artifacts:
-          path: build/meson-logs
+          path: build.cov/meson-logs
 
-  meson:
+  gcc:
     docker:
       - image: ubuntu:latest
     steps:
       - run: apt update && apt install git build-essential ninja-build meson -y
       - checkout
       - run: meson build
+      - run: cd build && ninja
+      - run: cd build && ninja test
+      - store_artifacts:
+          path: build/meson-logs
+
+  clang:
+    docker:
+      - image: ubuntu:latest
+    steps:
+      - run: apt update && apt install git clang-6.0 ninja-build meson -y
+      - checkout
+      - run: CXX=clang++-6.0 meson build
+      - run: cd build && ninja
       - run: cd build && ninja test
       - store_artifacts:
           path: build/meson-logs
@@ -31,5 +46,6 @@ workflows:
   build_and_test:
     jobs:
       - coverage
-      - meson
+      - gcc
+      - clang
 
