@@ -2,6 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/fmoessbauer/LibMVC.svg?style=shield)](https://circleci.com/gh/fmoessbauer/LibMVC)
 [![codecov](https://codecov.io/gh/fmoessbauer/LibMVC/branch/master/graph/badge.svg)](https://codecov.io/gh/fmoessbauer/LibMVC)
+[![Documentation](https://codedocs.xyz/fmoessbauer/LibMVC.svg)](https://codedocs.xyz/fmoessbauer/LibMVC/)
 
 LibMVC is a collection of fast iterative minimum vertex cover solvers.
 Currently the following algorithms are implemented:
@@ -13,7 +14,28 @@ The solvers take a graph in DIMACS format as input and calculate the
 minimum vertex cover / independent set. During the calculation, approximations
 are provided.
 
-### Parallel Solver Adapter
+## Example
+
+This is a minimal example to get the independent set from a graph,
+stored as DIMACS file:
+
+```cpp
+#include <fstream>
+#include "numvc.hpp"
+
+using namespace libmvc;
+
+// file in DIMACS format
+std::ifstream file(filename, std::ios::in);
+NuMVC solver(file, optimal_size, std::chrono::seconds(cutoff_time), true);
+solver.cover_LS(NuMVC::default_stats_printer);
+const auto & solution = solver.get_independent_set();
+```
+
+For a more extensive example, look at the standalone implementation.
+This also shows how to get statistics regarding the performance of the solver.
+
+## Parallel Solver Adapter
 
 The library includes an adapter for parallelizing any LibMVC interface
 compatible solver:
@@ -29,7 +51,7 @@ CPU cores.
 ## Compiling
 
 All solvers are implemented as header only C++14 libraries.
-Just incluce `<solver>/<solver>.hpp` in your project.
+Just incluce `LibMVC/<solver>.hpp` in your project.
 The tests and benchmarks are build using meson. You can also install LibMVC
 with meson. If you use meson for your project, you can pull in this project
 using a wrap.
@@ -42,7 +64,7 @@ For building the benchmarks, see the corresponding section below.
 ### Documentation
 
 To build the documentation for all headers using doxygen, call
-`make doc` in the build directory.
+`ninja doc` in the build directory.
 
 ## How to use
 
