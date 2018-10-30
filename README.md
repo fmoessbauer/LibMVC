@@ -2,7 +2,6 @@
 
 [![CircleCI](https://circleci.com/gh/fmoessbauer/LibMVC.svg?style=shield)](https://circleci.com/gh/fmoessbauer/LibMVC)
 [![codecov](https://codecov.io/gh/fmoessbauer/LibMVC/branch/master/graph/badge.svg)](https://codecov.io/gh/fmoessbauer/LibMVC)
-[![Documentation](https://codedocs.xyz/fmoessbauer/LibMVC.svg)](https://codedocs.xyz/fmoessbauer/LibMVC/)
 
 LibMVC is a collection of fast iterative minimum vertex cover solvers.
 Currently the following algorithms are implemented:
