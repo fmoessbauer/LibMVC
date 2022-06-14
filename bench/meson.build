@@ -1,10 +1,5 @@
 gbench_dep = dependency('benchmark', required: false)
 
-if not gbench_dep.found()
-  gbench_proj = subproject('benchmark')
-  gbench_dep  = gbench_proj.get_variable('gbenchmark_dep')
-endif
-
 # currently not supported
 #openmp  = dependency('openmp')
 threads = dependency('threads')
