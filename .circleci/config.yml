@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: ubuntu:latest
     steps:
-      - run: apt update && apt install git curl build-essential ninja-build meson lcov gcovr -y
+      - run: apt update && apt install git curl build-essential ninja-build meson lcov gcovr libgtest-dev -y
       - checkout
       - run: meson -Db_coverage=true build.cov
       - run: cd build.cov && ninja
@@ -21,7 +21,7 @@ jobs:
     docker:
       - image: ubuntu:latest
     steps:
-      - run: apt update && apt install git build-essential ninja-build meson -y
+      - run: apt update && apt install git build-essential ninja-build meson libgtest-dev libbenchmark-dev -y
       - checkout
       - run: meson build --warnlevel 3 --werror --prefix=/opt/libmvc
       - run: cd build && ninja
@@ -40,7 +40,7 @@ jobs:
     docker:
       - image: ubuntu:latest
     steps:
-      - run: apt update && apt install git clang-6.0 ninja-build meson -y
+      - run: apt update && apt install git clang-6.0 ninja-build meson libgtest-dev libbenchmark-dev -y
       - checkout
       - run: CXX=clang++-6.0 meson build --warnlevel 3 --werror
       - run: cd build && ninja

@@ -2,11 +2,6 @@
 
 gtest_dep = dependency('gtest', main: false, required: false)
 
-if not gtest_dep.found()
-  gtest_proj = subproject('gtest')
-  gtest_dep  = gtest_proj.get_variable('gtest_dep')
-endif
-
 testing = executable(
   'LibMVC-test',
   'main.cpp', 'SolverTests.cpp', 'InterfaceTests.cpp',
