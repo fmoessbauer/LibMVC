@@ -11,8 +11,8 @@ using namespace libmvc;
 template<typename SOLVER>
 class InterfaceTests: public ::testing::Test { };
 
-typedef ::testing::Types<NuMVC, FastVC, ParallelSolverAdapter<NuMVC>, ParallelSolverAdapter<FastVC>> SolverTypes;
-TYPED_TEST_CASE(InterfaceTests, SolverTypes);
+using SolverTypes = ::testing::Types<NuMVC, FastVC, ParallelSolverAdapter<NuMVC>, ParallelSolverAdapter<FastVC>>;
+TYPED_TEST_SUITE(InterfaceTests, SolverTypes, );
 
 extern std::string filename;
 extern int cover_size;
