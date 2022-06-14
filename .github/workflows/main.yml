@@ -1,0 +1,82 @@
+name: CI
+
+on: [push]
+
+jobs:
+  coverage:
+    name: code coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install deps
+        run: | 
+          export DEBIAN_FRONTEND=noninteractive
+          sudo -E apt-get update && sudo -E apt-get install git curl build-essential ninja-build meson lcov gcovr libgtest-dev libbenchmark-dev -y
+      - name: Build and Test
+        run: |
+          meson -Db_coverage=true build.cov
+          ninja -C build.cov
+          ninja -C build.cov test
+          ninja -C build.cov coverage-xml
+          bash <(curl -s https://codecov.io/bash)
+      - name: Upload logs
+        uses: actions/upload-artifact@v2
+        with:
+          name:  coverage
+          path: |
+            build.cov/build.cov/meson-logs/coverage.xml
+            build.cov/meson-logs
+
+  gcc-amd64:
+    name: gcc-amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install deps
+        run: | 
+          export DEBIAN_FRONTEND=noninteractive
+          sudo -E apt-get update && sudo -E apt-get install git build-essential ninja-build meson doxygen libgtest-dev libbenchmark-dev -y
+      - name: Build and Test
+        run: |
+          meson build --warnlevel 3 --werror --prefix=/opt/libmvc
+          ninja -C build
+          ninja -C build test
+          ninja -C build benchmark
+          sudo ninja -C build install
+      - name: Run standalone solvers
+        run: |
+          /opt/libmvc/bin/NuMVC-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+          /opt/libmvc/bin/FastVC-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+          /opt/libmvc/bin/NuMVC-parallel-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+          /opt/libmvc/bin/FastVC-parallel-standalone data/frb30-15-mis/frb30-15-1.mis 420 100
+      - name: Upload logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-logs
+          path: | 
+            build/doc/html
+            build/meson-logs
+
+  clang-amd64:
+    name: clang-amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install deps
+        run: | 
+          export DEBIAN_FRONTEND=noninteractive
+          sudo -E apt-get update && sudo -E apt-get install git clang libomp-dev build-essential ninja-build meson libgtest-dev libbenchmark-dev -y
+      - name: Build and Test
+        run: |
+          CXX=clang++  meson build --warnlevel 3
+          ninja -C build
+          ninja -C build test
+          ninja -C build benchmark
+      - name: Upload logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-logs
+          path: build/meson-logs
