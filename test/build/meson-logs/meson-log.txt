@@ -1,0 +1,10 @@
+Build started at 2018-05-02T15:32:50.965794
+Main binary: /usr/bin/python3
+Python system: Linux
+The Meson build system
+Version: 0.45.1
+Source dir: /home/felix/repos/github-fmoessbauer/LibMVC/test
+Build dir: /home/felix/repos/github-fmoessbauer/LibMVC/test/build
+Build type: native build
+
+ERROR: First statement must be a call to project
